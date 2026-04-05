@@ -2,19 +2,26 @@
 
 ## Core Principle
 
-Soma is a personal biosignal integration layer. It does not replace clinical tools —
-it fills the enormous gap between clinical appointments by giving you and your provider
-a continuous, legible picture of your biology.
+Soma is a personal biosignal integration layer. It does not replace clinical tools — it fills the gap between clinical appointments by giving you a continuous, legible picture of your physiology.
 
 ## Data Flow
 
 ```
-[Sources]          [Core/Rust]           [TimescaleDB]      [Science/Python]     [API]
-Apple Health  ──►  Ingest                signals table  ──►  Baseline model  ──►  FastAPI
-Garmin        ──►  Normalize    ──────►  baselines      ──►  Anomaly detect  ──►  REST
-Oura          ──►  Validate              annotations         Correlations         endpoints
-Phone sensors ──►  Hash (BLAKE3)
-Manual entry  ──►  Store
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   DATA SOURCES  │     │   INGESTION     │     │    STORAGE      │     │    ANALYSIS     │
+├─────────────────┤     ├─────────────────┤     ├─────────────────┤     ├─────────────────┤
+│                 │     │                 │     │                 │     │                 │
+│ Apple Health ───┼────►│ Rust Core       │     │ TimescaleDB     │     │ Baselines       │
+│ (XML export)    │     │ • Parse         │     │                 │     │ • Personal norm │
+│                 │     │ • Normalize     │────►│ signals         │────►│ • Deviation     │
+│ Whoop ──────────┼────►│ • BLAKE3 hash   │     │ baselines       │     │                 │
+│ (OAuth2 API)    │     │ • Deduplicate   │     │ annotations     │     │ Holistic        │
+│                 │     │                 │     │ oauth_tokens    │     │ • 6-domain score│
+│ Future:         │     │ Python Sync     │     │ ingest_log      │     │ • Correlations  │
+│ • Garmin        │     │ • OAuth flow    │     │                 │     │ • Patterns      │
+│ • Oura          │     │ • API polling   │     │                 │     │                 │
+│ • CGM           │     │ • Rate limiting │     │                 │     │                 │
+└─────────────────┘     └─────────────────┘     └─────────────────┘     └─────────────────┘
 ```
 
 ## Design Decisions
@@ -65,35 +72,34 @@ hospitalization, and functional decline. We include it as a distinct domain
 with confound-controlled trend analysis (97% of walking speed decline is real,
 only 3% confounded by activity level or season).
 
-## Science Layer Architecture
+## Analysis Pipeline
 
 ```
-[Raw Signals]
-     │
-     ▼
-[Proven Analysis]     ─► Circadian, weekly patterns, trends, anomalies
-     │
-     ▼
-[Advanced Analysis]   ─► Correlations, recovery, seasonality, readiness
-     │
-     ▼
-[Derived Metrics]     ─► Nocturnal dip, training load, autonomic balance
-     │
-     ▼
-[Holistic Synthesis]  ─► 6-domain wellness score (Harmonic Mean)
-     │                   Cross-domain interconnections
-     │                   Paradox detection (Simpson's)
-     │                   Behavioral patterns
-     │                   Risk factors & recommendations
-     │
-     ▼
-[Explainable Output]  ─► Arithmetic mean comparison
-                         Imbalance penalty
-                         Bottleneck analysis
-                         Actionable recommendations
+Raw Signals
+    │
+    ├──► Proven Analysis ──────► Circadian rhythms, weekly patterns, trends
+    │
+    ├──► Advanced Analysis ────► Cross-biomarker correlations, recovery modeling
+    │
+    ├──► Derived Metrics ──────► Training load (ACWR), autonomic balance, stress index
+    │
+    └──► Holistic Synthesis
+              │
+              ├──► 6-domain wellness score (Harmonic Mean)
+              ├──► Cross-domain interconnections
+              ├──► Behavioral pattern detection
+              └──► Personalized recommendations
 ```
+
+## API Layer
+
+The FastAPI layer provides:
+- **RESTful endpoints** with OpenAPI documentation
+- **OAuth2 integration** for external services (Whoop)
+- **Rate limiting** and **API key authentication**
+- **Background sync jobs** for API-based data sources
+- **Caching** with Redis (optional)
 
 ## Data Ownership
 
-All data is stored locally by default. No telemetry. No cloud sync unless explicitly
-configured. The database runs in Docker on your own machine. You own your data.
+All data is stored locally by default. No telemetry. No cloud sync unless explicitly configured. The database runs in Docker on your machine. You own your data.

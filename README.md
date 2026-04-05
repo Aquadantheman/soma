@@ -1,147 +1,123 @@
 # Soma
 
-**Continuous biosignal integration for personal mental health.**
+**Continuous biosignal integration for personal health.**
 
-Soma is an open-source platform that aggregates, normalizes, and models continuous biological signals from wearables and passive phone sensors — building a longitudinal personal baseline that makes your neurochemical patterns legible for the first time.
+Soma is an open-source platform that aggregates, normalizes, and models continuous biological signals from wearables — building a longitudinal personal baseline that makes your physiological patterns legible for the first time.
 
 ## The Problem
 
-Psychiatry is the only medical specialty that treats organ dysfunction without measuring the organ. Treatment is trial-and-error. Data is siloed across devices, providers, and time. You walk into an appointment with memory instead of data.
+Your health data is fragmented. Apple Watch, Whoop, Garmin, smart scales — each lives in its own silo. You walk into a doctor's appointment with memory instead of data. There's no unified view of *you* over time.
 
 ## What Soma Does
 
-- Ingests data from Apple Health, Garmin, Oura, and generic CSV sources
-- Normalizes heterogeneous signals into a unified time-series schema
-- Builds a personal longitudinal baseline — your normal, not the population's
-- Detects anomalies and correlations across signals
-- **Computes multi-domain wellness scores** using Harmonic Mean (6 domains)
-- **Identifies cross-domain patterns** (paradoxes, behavioral patterns, interconnections)
-- Exports clinically meaningful summaries with actionable recommendations
+- **Ingests data** from Apple Health, Whoop, and file exports
+- **Normalizes signals** into a unified time-series schema
+- **Builds your personal baseline** — your normal, not the population's
+- **Detects anomalies** and cross-signal correlations
+- **Computes wellness scores** using Harmonic Mean across 6 domains
+- **Identifies patterns** — sleep-HRV relationships, behavioral trends, seasonal effects
+- **Provides explainability** — every score includes bottleneck analysis and actionable insights
 
 ## What Soma Doesn't Do
 
-Soma is not a diagnostic tool. It does not measure dopamine, serotonin, or other neurotransmitters directly. It builds a personal model from signals that are measurable — HRV, EDA, sleep architecture, cortisol proxies, activity patterns — and over time develops predictive validity specific to you.
+Soma is not a diagnostic tool. It does not replace clinical measurement. It builds a personal model from signals that are measurable — HRV, sleep architecture, activity patterns, body composition — and over time develops predictive validity specific to you.
 
 ## Architecture
 
 ```
-core/       Rust    — ingestion, normalization, BLAKE3 integrity, DB writes
-science/    Python  — signal processing, baseline modeling, correlation
-api/        Python  — FastAPI REST layer
-app/        React   — dashboard (future)
-proto/      Protobuf — shared data schemas
+core/       Rust    — high-performance ingestion, normalization, BLAKE3 hashing
+api/        Python  — FastAPI REST layer with OAuth2 integrations
+science/    Python  — signal processing, baseline modeling, statistical analysis
+docs/       —         architecture and implementation documentation
 ```
 
 ## Stack
 
-- **Rust** — core ingestion and processing pipeline
+- **Rust** — core ingestion pipeline (handles 500MB+ Apple Health exports)
 - **Python** — scientific computing (NumPy, SciPy, scikit-learn)
-- **TimescaleDB** — time-series PostgreSQL
-- **FastAPI** — REST API
-- **Protocol Buffers** — cross-language data schemas
-- **Docker** — local dev environment
+- **TimescaleDB** — time-series PostgreSQL for efficient signal queries
+- **FastAPI** — REST API with OpenAPI documentation
+- **Docker** — containerized local development
 
 ## Getting Started
 
 ```bash
-# Start TimescaleDB locally
+# 1. Start TimescaleDB
 docker-compose up -d
 
-# Build Rust core
-cd core && cargo build
+# 2. Configure environment
+cp .env.example .env
+# Edit .env with your database credentials
 
-# Install Python science layer
-cd science && pip install -e ".[dev]"
+# 3. Build Rust ingestion core
+cd core && cargo build --release
 
-# Install API layer
+# 4. Install Python dependencies
 pip install -r api/requirements.txt
 
-# Run ingestion on an Apple Health export
-soma-core ingest --source apple_health --path ~/export.xml
-```
+# 5. Run database migrations
+alembic upgrade head
 
-## API
-
-Start the REST API:
-
-```bash
+# 6. Start the API
 uvicorn api.main:app --reload
 ```
 
 Then open http://localhost:8000/docs for interactive API documentation.
 
-### Key Endpoints
+## Data Sources
+
+### Apple Health (File Import)
+Export your Apple Health data as XML and ingest via the Rust core:
+```bash
+./core/target/release/soma-core ingest --source apple-health --path export.xml
+```
+
+### Whoop (OAuth2 API)
+1. Register at [developer.whoop.com](https://developer.whoop.com)
+2. Add your credentials to `.env`
+3. Connect via `GET /v1/oauth/authorize/whoop`
+4. Sync data via `POST /v1/sync/whoop`
+
+## Key Endpoints
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /status` | System health and data coverage |
-| `GET /signals` | Query signals with filters |
-| `GET /signals/latest` | Latest reading per biomarker |
-| `GET /baselines` | View computed baselines |
-| `POST /baselines/compute` | Trigger baseline computation |
-| `POST /baselines/deviation` | Check value against baseline |
-| `GET /annotations` | List life events |
-| `POST /annotations` | Log a life event |
-| `GET /analysis/holistic` | **Full holistic wellness analysis** |
-| `GET /analysis/holistic/wellness-score` | Multi-domain wellness score |
+| `GET /v1/status` | System health and data coverage |
+| `GET /v1/signals` | Query signals with filters |
+| `GET /v1/baselines` | View computed personal baselines |
+| `POST /v1/baselines/deviation` | Check a value against your baseline |
+| `GET /v1/analysis/holistic` | Full multi-domain wellness analysis |
+| `GET /v1/oauth/authorize/whoop` | Connect Whoop account |
+| `POST /v1/sync/whoop` | Sync Whoop data |
 
-## CLI Dashboard
+## Wellness Scoring
 
-View your data from the terminal:
-
-```bash
-# System status and coverage
-python -m soma.cli status
-
-# View computed baselines
-python -m soma.cli baselines
-
-# Recent signals for a biomarker
-python -m soma.cli signals hrv_rmssd 14
-
-# Check a value against your baseline
-python -m soma.cli check hrv_rmssd 28.5
-```
-
-## Holistic Analysis
-
-Soma synthesizes findings across all biomarker domains into a unified wellness assessment:
-
-### 6-Domain Wellness Score (Harmonic Mean)
+Soma synthesizes signals into a 6-domain wellness score using **Harmonic Mean** — an approach that naturally penalizes imbalance (based on V-Clock biological age research).
 
 | Domain | Key Biomarkers |
 |--------|----------------|
-| Cardiovascular | HRV, Resting HR, VO2 Max |
-| Sleep | Duration, Architecture, Efficiency |
-| Activity | Steps, Active Energy, Exercise Time |
-| Recovery | HRV Recovery, Training Load |
+| Cardiovascular | HRV (RMSSD/SDNN), Resting HR, VO2 Max |
+| Sleep | Duration, Efficiency, REM/Deep/Light stages |
+| Activity | Steps, Active Energy, Exercise Minutes |
+| Recovery | HRV Recovery, Training Load (ACWR) |
 | Body Composition | Weight, Body Fat %, BMI |
-| Mobility | Walking Speed, Steadiness (clinical "sixth vital sign") |
+| Mobility | Walking Speed, Steadiness |
 
-The overall score uses **Harmonic Mean** rather than simple averaging, which naturally penalizes imbalance. This approach is based on V-Clock biological age research showing that vector (domain-specific) approaches capture 1.78x more predictive information than scalar approaches.
-
-### Explainability
-
-Every wellness score includes:
-- **Arithmetic Mean** — what simple averaging would give
-- **Imbalance Penalty** — how much imbalance costs you
-- **Bottleneck Domain** — which area is holding your score back
-- **Bottleneck Impact** — potential points gained by improving it
-
-### Advanced Features
-
-- **Simpson's Paradox Detection** — identifies misleading correlations
-- **Behavioral Pattern Recognition** — compensatory exercise, weekend warrior, seasonal patterns
-- **Cross-Domain Interconnections** — lagged correlations (e.g., sleep → next-day HRV)
-- **Risk Factor Synthesis** — combines signals into actionable risk assessments
-- **Evidence-Based Recommendations** — personalized, prioritized actions
-
-See `docs/HOLISTIC_INSIGHTS_IMPLEMENTATION.md` for full details.
-
-## Roadmap
-
-See `docs/ROADMAP.md`
+Every score includes **explainability**:
+- Bottleneck analysis (which domain is holding you back)
+- Imbalance penalty (cost of uneven domains)
+- Actionable recommendations
 
 ## Philosophy
 
-Your biological data belongs to you. Soma is built open-source from day one. No cloud required. No data leaves your machine unless you explicitly export it.
+Your biological data belongs to you. Soma runs entirely on your machine. No cloud required. No telemetry. No data leaves unless you explicitly export it.
+
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md) — design decisions and data flow
+- [Roadmap](docs/ROADMAP.md) — development phases and progress
+- [Holistic Implementation](docs/HOLISTIC_INSIGHTS_IMPLEMENTATION.md) — wellness scoring details
+
+## License
+
+MIT
