@@ -29,17 +29,6 @@ jobs:
         with:
           components: rustfmt, clippy
 
-      - name: Cache cargo registry
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            core/target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('core/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
-
       - name: Check formatting
         run: cargo fmt --all -- --check
 
@@ -61,17 +50,6 @@ jobs:
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo registry
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            core/target
-          key: ${{ runner.os }}-cargo-test-${{ hashFiles('core/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-test-
 
       - name: Run tests
         run: cargo test --all-features
