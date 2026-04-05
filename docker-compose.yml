@@ -1,0 +1,230 @@
+version: "3.8"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Soma - Full Stack Development Environment
+# ═══════════════════════════════════════════════════════════════════════════════
+# Services:
+#   - timescaledb: Time-series database (PostgreSQL + TimescaleDB)
+#   - redis:       Cache and job queue
+#   - api:         Python FastAPI service
+#   - core:        Rust ingestion CLI (run on-demand)
+#   - pgadmin:     Database admin UI (optional)
+#
+# Usage:
+#   docker compose up -d                    # Start all services
+#   docker compose up -d timescaledb redis  # Start only infra
+#   docker compose logs -f api              # Follow API logs
+#   docker compose run core ingest --source apple-health --path /data/export.xml
+# ═══════════════════════════════════════════════════════════════════════════════
+
+services:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # TimescaleDB - Time-series PostgreSQL
+  # ─────────────────────────────────────────────────────────────────────────────
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: soma_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: soma
+      POSTGRES_PASSWORD: ${SOMA_DB_PASSWORD:-soma_dev}
+      POSTGRES_DB: soma
+    ports:
+      - "5432:5432"
+    volumes:
+      - soma_pgdata:/var/lib/postgresql/data
+      - ./core/sql/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U soma -d soma"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - soma_network
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Redis - Cache & Job Queue
+  # ─────────────────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: soma_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - soma_redis:/data
+    environment:
+      REDIS_PASSWORD: ${SOMA_REDIS_PASSWORD:-}
+    # Security: Password auth, memory limits, idle timeout, and persistence
+    # In production, set SOMA_REDIS_PASSWORD to a strong password
+    command: >
+      sh -c '
+        if [ -n "$$REDIS_PASSWORD" ]; then
+          redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --timeout 300 --requirepass "$$REDIS_PASSWORD"
+        else
+          redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --timeout 300
+        fi
+      '
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - soma_network
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # API - Python FastAPI Service
+  # ─────────────────────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+      target: production
+    container_name: soma_api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      SOMA_DATABASE_URL: postgresql://soma:${SOMA_DB_PASSWORD:-soma_dev}@timescaledb:5432/soma
+      SOMA_REDIS_URL: redis://redis:6379/0
+      SOMA_REDIS_PASSWORD: ${SOMA_REDIS_PASSWORD:-}
+      SOMA_LOG_LEVEL: ${SOMA_LOG_LEVEL:-INFO}
+      SOMA_JSON_LOGS: "true"
+      SOMA_AUTH_MODE: ${SOMA_AUTH_MODE:-api_key}
+      SOMA_API_KEY: ${SOMA_API_KEY:-}
+      SOMA_ALLOW_API_KEY_QUERY: ${SOMA_ALLOW_API_KEY_QUERY:-false}
+      SOMA_CORS_ORIGINS: ${SOMA_CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - soma_network
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # API Dev - Development mode with hot reload
+  # ─────────────────────────────────────────────────────────────────────────────
+  api-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+      target: dev
+    container_name: soma_api_dev
+    ports:
+      - "8000:8000"
+    environment:
+      SOMA_DATABASE_URL: postgresql://soma:${SOMA_DB_PASSWORD:-soma_dev}@timescaledb:5432/soma
+      SOMA_REDIS_URL: redis://redis:6379/0
+      SOMA_REDIS_PASSWORD: ${SOMA_REDIS_PASSWORD:-}
+      SOMA_LOG_LEVEL: DEBUG
+      SOMA_JSON_LOGS: "false"
+      SOMA_AUTH_MODE: ${SOMA_AUTH_MODE:-api_key}
+    volumes:
+      - ./api:/app/api:ro
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - soma_network
+    profiles:
+      - dev
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Core - Rust Ingestion CLI (run on-demand)
+  # ─────────────────────────────────────────────────────────────────────────────
+  core:
+    build:
+      context: .
+      dockerfile: Dockerfile.core
+    container_name: soma_core
+    environment:
+      SOMA_DATABASE_URL: postgres://soma:${SOMA_DB_PASSWORD:-soma_dev}@timescaledb:5432/soma
+      RUST_LOG: ${RUST_LOG:-soma_core=info}
+    volumes:
+      - ./data:/app/data:ro
+      - ./apple_health_export:/app/apple_health_export:ro
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    networks:
+      - soma_network
+    profiles:
+      - tools
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # RQ Worker - Background Job Processor
+  # ─────────────────────────────────────────────────────────────────────────────
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+      target: production
+    container_name: soma_worker
+    restart: unless-stopped
+    environment:
+      SOMA_DATABASE_URL: postgresql://soma:${SOMA_DB_PASSWORD:-soma_dev}@timescaledb:5432/soma
+      SOMA_REDIS_URL: redis://redis:6379/0
+      SOMA_REDIS_PASSWORD: ${SOMA_REDIS_PASSWORD:-}
+      SOMA_LOG_LEVEL: ${SOMA_LOG_LEVEL:-INFO}
+    # Note: RQ worker needs the Redis URL directly; password handled via SOMA_REDIS_PASSWORD in app
+    command: ["python", "-m", "rq.cli", "worker", "--url", "redis://redis:6379/0", "soma-jobs"]
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - soma_network
+    profiles:
+      - workers
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # pgAdmin - Database Administration UI
+  # ─────────────────────────────────────────────────────────────────────────────
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: soma_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@soma.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-soma_dev}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "5050:80"
+    volumes:
+      - soma_pgadmin:/var/lib/pgadmin
+    depends_on:
+      - timescaledb
+    networks:
+      - soma_network
+    profiles:
+      - tools
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Networks
+# ─────────────────────────────────────────────────────────────────────────────
+networks:
+  soma_network:
+    driver: bridge
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Volumes
+# ─────────────────────────────────────────────────────────────────────────────
+volumes:
+  soma_pgdata:
+    name: soma_pgdata
+  soma_redis:
+    name: soma_redis
+  soma_pgadmin:
+    name: soma_pgadmin

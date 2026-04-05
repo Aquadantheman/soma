@@ -1,0 +1,71 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+ENV/
+
+# Rust
+target/
+Cargo.lock
+
+# Testing
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Documentation
+docs/_build/
+*.md
+!README.md
+
+# Environment files (secrets)
+.env
+.env.local
+.env.*.local
+
+# Data files (large)
+*.csv
+*.xml
+*.pkl
+*.json
+!pyproject.toml
+!alembic.ini
+
+# Apple Health exports
+apple_health_export/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+nul
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Claude artifacts
+.claude/

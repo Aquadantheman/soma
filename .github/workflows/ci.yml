@@ -1,0 +1,260 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # RUST CORE
+  # ═══════════════════════════════════════════════════════════════════════════════
+  rust-check:
+    name: Rust Check & Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./core
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-action@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            core/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('core/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Clippy lints
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Build
+        run: cargo build --release
+
+  rust-test:
+    name: Rust Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./core
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-action@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            core/target
+          key: ${{ runner.os }}-cargo-test-${{ hashFiles('core/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-test-
+
+      - name: Run tests
+        run: cargo test --all-features
+
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # PYTHON API & SCIENCE
+  # ═══════════════════════════════════════════════════════════════════════════════
+  python-lint:
+    name: Python Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff black mypy
+
+      - name: Check formatting with Black
+        run: |
+          black --check api/ science/ tests/
+
+      - name: Lint with Ruff
+        run: |
+          ruff check api/ science/ tests/
+
+  python-test:
+    name: Python Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: timescale/timescaledb:latest-pg15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: soma_dev
+          POSTGRES_DB: soma_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: 'pip'
+
+      - name: Install API dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r api/requirements.txt
+          pip install -e science/
+          pip install pytest pytest-asyncio pytest-cov httpx
+
+      - name: Initialize test database
+        env:
+          PGPASSWORD: soma_dev
+        run: |
+          psql -h localhost -U postgres -d soma_test -f core/sql/init.sql
+
+      - name: Run unit tests
+        env:
+          SOMA_DATABASE_URL: postgresql+psycopg2://postgres:soma_dev@localhost:5432/soma_test
+          SOMA_REDIS_URL: redis://localhost:6379/0
+          SOMA_AUTH_MODE: disabled
+        run: |
+          pytest tests/unit/ -v --cov=api --cov=science --cov-report=xml
+
+      - name: Run integration tests
+        env:
+          SOMA_DATABASE_URL: postgresql+psycopg2://postgres:soma_dev@localhost:5432/soma_test
+          SOMA_REDIS_URL: redis://localhost:6379/0
+          SOMA_AUTH_MODE: disabled
+        run: |
+          pytest tests/integration/ -v
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
+
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # TYPE CHECKING
+  # ═══════════════════════════════════════════════════════════════════════════════
+  python-typecheck:
+    name: Python Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r api/requirements.txt
+          pip install -e science/
+          pip install mypy types-redis
+
+      - name: Type check with mypy
+        run: |
+          mypy api/ --ignore-missing-imports --no-error-summary || true
+          mypy science/ --ignore-missing-imports --no-error-summary || true
+
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # DOCKER BUILD
+  # ═══════════════════════════════════════════════════════════════════════════════
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build API image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.api
+          push: false
+          tags: soma-api:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build Core image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.core
+          push: false
+          tags: soma-core:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # ALL CHECKS PASSED
+  # ═══════════════════════════════════════════════════════════════════════════════
+  ci-success:
+    name: CI Success
+    needs: [rust-check, rust-test, python-lint, python-test]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Check all jobs passed
+        run: |
+          if [[ "${{ needs.rust-check.result }}" != "success" ]] || \
+             [[ "${{ needs.rust-test.result }}" != "success" ]] || \
+             [[ "${{ needs.python-lint.result }}" != "success" ]] || \
+             [[ "${{ needs.python-test.result }}" != "success" ]]; then
+            echo "One or more jobs failed"
+            exit 1
+          fi
+          echo "All CI checks passed!"

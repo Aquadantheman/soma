@@ -1,0 +1,72 @@
+# Soma Core - Rust Ingestion Pipeline
+# Multi-stage build for optimized production binary
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Stage 1: Builder
+# ──────────────────────────────────────────────────────────────────────────────
+FROM rust:1.75-slim as builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    pkg-config \
+    libssl-dev \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Cache dependencies by building them first
+COPY core/Cargo.toml core/Cargo.lock* ./core/
+COPY Cargo.toml ./
+
+# Create dummy src to build dependencies
+RUN mkdir -p core/src && \
+    echo "fn main() {}" > core/src/main.rs && \
+    echo "pub fn lib() {}" > core/src/lib.rs
+
+WORKDIR /app/core
+RUN cargo build --release || true
+
+# Now copy actual source and rebuild
+COPY core/src ./src/
+COPY core/sql ./sql/
+
+# Touch main.rs to force rebuild
+RUN touch src/main.rs && cargo build --release
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Stage 2: Production
+# ──────────────────────────────────────────────────────────────────────────────
+FROM debian:bookworm-slim as production
+
+WORKDIR /app
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    libpq5 \
+    libssl3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy binary from builder
+COPY --from=builder /app/core/target/release/soma-core /usr/local/bin/soma-core
+
+# Copy SQL schema for reference
+COPY core/sql ./sql/
+
+# Create non-root user
+RUN useradd --create-home --shell /bin/bash soma && \
+    chown -R soma:soma /app
+USER soma
+
+# Data directory for imports
+RUN mkdir -p /app/data
+VOLUME ["/app/data"]
+
+# Environment defaults
+ENV SOMA_DATABASE_URL="postgres://soma:soma_dev@timescaledb:5432/soma" \
+    RUST_LOG="soma_core=info"
+
+# Default command shows help
+ENTRYPOINT ["soma-core"]
+CMD ["--help"]

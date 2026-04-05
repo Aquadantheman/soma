@@ -1,0 +1,14 @@
+# Soma API dependencies
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.5
+pydantic-settings>=2.1
+sqlalchemy>=2.0
+psycopg2-binary>=2.9
+python-dotenv>=1.0
+httpx>=0.27.0  # Async HTTP client for external APIs
+
+# Science layer (for baseline computation)
+numpy>=1.26
+scipy>=1.11
+pandas>=2.1

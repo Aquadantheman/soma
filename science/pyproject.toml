@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "soma-science"
+version = "0.1.0"
+description = "Soma signal processing and baseline modeling"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "pandas>=2.1",
+    "scikit-learn>=1.3",
+    "psycopg2-binary>=2.9",
+    "sqlalchemy>=2.0",
+    "python-dotenv>=1.0",
+    "neurokit2>=0.2",       # HRV and EDA signal processing
+    "antropy>=0.1.6",       # Entropy measures for HRV
+    "rich>=13.0",           # CLI output
+]
+
+[project.scripts]
+soma = "soma.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["soma"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "black>=23.0",
+    "ruff>=0.1",
+    "mypy>=1.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
