@@ -9,52 +9,39 @@ Tests cover:
 - Recommendation generation
 """
 
-import pytest
-import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta, date
-
-from soma.statistics.holistic import (
-    # Data types
-    Finding,
-    Interconnection,
-    Paradox,
-    BehavioralPattern,
-    RiskFactor,
-    Recommendation,
-    DomainScore,
-    WellnessScore,
-    DataAdequacy,
-    HolisticInsight,
-    AnalysisInputs,
-    # Functions
-    aggregate_signals,
-    compute_data_adequacy,
-    compute_correlation,
-    compute_detrended_correlation,
-    compute_lagged_correlation,
-    detect_simpsons_paradox,
-    detect_all_paradoxes,
-    detect_compensatory_exercise,
-    detect_weekend_warrior,
-    detect_seasonal_activity_pattern,
-    detect_all_behavioral_patterns,
-    find_cross_domain_interconnections,
-    compute_cardiovascular_score,
-    compute_sleep_score,
-    compute_activity_score,
-    compute_recovery_score,
-    compute_body_composition_score,
-    compute_wellness_score,
-    synthesize_risk_factors,
-    identify_protective_factors,
-    generate_recommendations,
-    generate_holistic_insight,
-)
-
 # Import for tests
 import warnings
-warnings.filterwarnings('ignore')
+from datetime import datetime, timedelta
+
+import numpy as np
+import pandas as pd
+import pytest
+
+from soma.statistics.holistic import (
+    AnalysisInputs,
+    BehavioralPattern,
+    DataAdequacy,
+    HolisticInsight,
+    Interconnection,
+    Paradox,
+    Recommendation,
+    WellnessScore,
+    # Functions
+    aggregate_signals,
+    compute_correlation,
+    compute_data_adequacy,
+    compute_detrended_correlation,
+    compute_wellness_score,
+    detect_all_behavioral_patterns,
+    detect_compensatory_exercise,
+    detect_simpsons_paradox,
+    find_cross_domain_interconnections,
+    generate_holistic_insight,
+    generate_recommendations,
+    synthesize_risk_factors,
+)
+
+warnings.filterwarnings("ignore")
 
 
 def make_test_signals(n_days: int = 90, seed: int = 42) -> pd.DataFrame:
@@ -75,58 +62,76 @@ def make_test_signals(n_days: int = 90, seed: int = 42) -> pd.DataFrame:
         day = base_date + timedelta(days=i)
 
         # Cardiovascular
-        records.append({
-            'time': day,
-            'biomarker_slug': 'heart_rate',
-            'value': 70 + np.random.normal(0, 5)
-        })
-        records.append({
-            'time': day,
-            'biomarker_slug': 'hrv_sdnn',
-            'value': 50 + np.random.normal(0, 10)
-        })
-        records.append({
-            'time': day,
-            'biomarker_slug': 'heart_rate_resting',
-            'value': 60 + np.random.normal(0, 3)
-        })
+        records.append(
+            {
+                "time": day,
+                "biomarker_slug": "heart_rate",
+                "value": 70 + np.random.normal(0, 5),
+            }
+        )
+        records.append(
+            {
+                "time": day,
+                "biomarker_slug": "hrv_sdnn",
+                "value": 50 + np.random.normal(0, 10),
+            }
+        )
+        records.append(
+            {
+                "time": day,
+                "biomarker_slug": "heart_rate_resting",
+                "value": 60 + np.random.normal(0, 3),
+            }
+        )
 
         # Activity
-        records.append({
-            'time': day,
-            'biomarker_slug': 'steps',
-            'value': max(1000, 8000 + np.random.normal(0, 2000))
-        })
-        records.append({
-            'time': day,
-            'biomarker_slug': 'exercise_time',
-            'value': max(0, 30 + np.random.normal(0, 15))
-        })
+        records.append(
+            {
+                "time": day,
+                "biomarker_slug": "steps",
+                "value": max(1000, 8000 + np.random.normal(0, 2000)),
+            }
+        )
+        records.append(
+            {
+                "time": day,
+                "biomarker_slug": "exercise_time",
+                "value": max(0, 30 + np.random.normal(0, 15)),
+            }
+        )
 
         # Body composition (weekly)
         if i % 7 == 0:
-            records.append({
-                'time': day,
-                'biomarker_slug': 'body_mass',
-                'value': 75 + np.random.normal(0, 1)
-            })
+            records.append(
+                {
+                    "time": day,
+                    "biomarker_slug": "body_mass",
+                    "value": 75 + np.random.normal(0, 1),
+                }
+            )
 
         # Sleep
-        records.append({
-            'time': day,
-            'biomarker_slug': 'sleep_rem',
-            'value': max(0, 90 + np.random.normal(0, 20))
-        })
-        records.append({
-            'time': day,
-            'biomarker_slug': 'sleep_deep',
-            'value': max(0, 60 + np.random.normal(0, 15))
-        })
-        records.append({
-            'time': day,
-            'biomarker_slug': 'sleep_core',
-            'value': max(0, 240 + np.random.normal(0, 30))
-        })
+        records.append(
+            {
+                "time": day,
+                "biomarker_slug": "sleep_rem",
+                "value": max(0, 90 + np.random.normal(0, 20)),
+            }
+        )
+        records.append(
+            {
+                "time": day,
+                "biomarker_slug": "sleep_deep",
+                "value": max(0, 60 + np.random.normal(0, 15)),
+            }
+        )
+        records.append(
+            {
+                "time": day,
+                "biomarker_slug": "sleep_core",
+                "value": max(0, 240 + np.random.normal(0, 30)),
+            }
+        )
 
     return pd.DataFrame(records)
 
@@ -153,20 +158,16 @@ def make_paradox_signals(n_days: int = 180, seed: int = 42) -> pd.DataFrame:
         # But on any given day, higher weight -> more steps (compensatory)
         time_effect = -2000 * (i / n_days)
         weight_effect = 200 * (weight - 77.5)  # Compensatory: more weight = more steps
-        steps = max(1000, 8000 + time_effect + weight_effect + np.random.normal(0, 1000))
+        steps = max(
+            1000, 8000 + time_effect + weight_effect + np.random.normal(0, 1000)
+        )
 
-        records.append({
-            'time': day,
-            'biomarker_slug': 'steps',
-            'value': steps
-        })
+        records.append({"time": day, "biomarker_slug": "steps", "value": steps})
 
         if i % 7 == 0:  # Weekly weight measurements
-            records.append({
-                'time': day,
-                'biomarker_slug': 'body_mass',
-                'value': weight
-            })
+            records.append(
+                {"time": day, "biomarker_slug": "body_mass", "value": weight}
+            )
 
     return pd.DataFrame(records)
 
@@ -188,29 +189,29 @@ class TestAggregateSignals:
         result = aggregate_signals(df)
 
         # Each biomarker should have one value per day
-        assert len(result['heart_rate']) <= 30
+        assert len(result["heart_rate"]) <= 30
 
     def test_sums_countable_biomarkers(self):
         """Should sum steps, active_energy, exercise_time."""
         records = [
-            {'time': datetime.now(), 'biomarker_slug': 'steps', 'value': 5000},
-            {'time': datetime.now(), 'biomarker_slug': 'steps', 'value': 3000},
+            {"time": datetime.now(), "biomarker_slug": "steps", "value": 5000},
+            {"time": datetime.now(), "biomarker_slug": "steps", "value": 3000},
         ]
         df = pd.DataFrame(records)
         result = aggregate_signals(df)
 
-        assert result['steps'].iloc[0] == 8000
+        assert result["steps"].iloc[0] == 8000
 
     def test_averages_rate_biomarkers(self):
         """Should average heart_rate, hrv, etc."""
         records = [
-            {'time': datetime.now(), 'biomarker_slug': 'heart_rate', 'value': 70},
-            {'time': datetime.now(), 'biomarker_slug': 'heart_rate', 'value': 80},
+            {"time": datetime.now(), "biomarker_slug": "heart_rate", "value": 70},
+            {"time": datetime.now(), "biomarker_slug": "heart_rate", "value": 80},
         ]
         df = pd.DataFrame(records)
         result = aggregate_signals(df)
 
-        assert result['heart_rate'].iloc[0] == 75
+        assert result["heart_rate"].iloc[0] == 75
 
 
 class TestComputeCorrelation:
@@ -265,15 +266,19 @@ class TestComputeDetrendedCorrelation:
         df = make_paradox_signals(n_days=180)
         signals = aggregate_signals(df)
 
-        raw_r, raw_p, raw_n = compute_correlation(signals['steps'], signals['body_mass'])
+        raw_r, raw_p, raw_n = compute_correlation(
+            signals["steps"], signals["body_mass"]
+        )
         detrended_r, detrended_p, detrended_n = compute_detrended_correlation(
-            signals['steps'], signals['body_mass']
+            signals["steps"], signals["body_mass"]
         )
 
         # If we have enough data, detrended should differ from raw
         if not np.isnan(raw_r) and not np.isnan(detrended_r):
             # Raw and detrended should differ when there's a confounding trend
-            assert abs(detrended_r - raw_r) > 0.05 or detrended_r == pytest.approx(raw_r, abs=0.1)
+            assert abs(detrended_r - raw_r) > 0.05 or detrended_r == pytest.approx(
+                raw_r, abs=0.1
+            )
 
 
 class TestDetectSimpsonsParadox:
@@ -285,10 +290,7 @@ class TestDetectSimpsonsParadox:
         signals = aggregate_signals(df)
 
         result = detect_simpsons_paradox(
-            signals['steps'],
-            signals['body_mass'],
-            'steps',
-            'body_mass'
+            signals["steps"], signals["body_mass"], "steps", "body_mass"
         )
 
         assert result is None or isinstance(result, Paradox)
@@ -299,10 +301,7 @@ class TestDetectSimpsonsParadox:
         signals = aggregate_signals(df)
 
         result = detect_simpsons_paradox(
-            signals['steps'],
-            signals['body_mass'],
-            'steps',
-            'body_mass'
+            signals["steps"], signals["body_mass"], "steps", "body_mass"
         )
 
         # Paradox should be detected (raw positive, detrended near zero)
@@ -318,8 +317,10 @@ class TestDetectCompensatoryExercise:
         df = make_paradox_signals(n_days=180)
         signals = aggregate_signals(df)
 
-        if 'body_mass' in signals and 'steps' in signals:
-            result = detect_compensatory_exercise(signals['body_mass'], signals['steps'])
+        if "body_mass" in signals and "steps" in signals:
+            result = detect_compensatory_exercise(
+                signals["body_mass"], signals["steps"]
+            )
             assert result is None or isinstance(result, BehavioralPattern)
 
     def test_pattern_has_required_fields(self):
@@ -327,13 +328,15 @@ class TestDetectCompensatoryExercise:
         df = make_paradox_signals(n_days=180)
         signals = aggregate_signals(df)
 
-        if 'body_mass' in signals and 'steps' in signals:
-            result = detect_compensatory_exercise(signals['body_mass'], signals['steps'])
+        if "body_mass" in signals and "steps" in signals:
+            result = detect_compensatory_exercise(
+                signals["body_mass"], signals["steps"]
+            )
 
             if result:
                 assert result.name == "Compensatory Exercise"
                 assert result.pattern_type == "compensatory"
-                assert result.health_implication in ('positive', 'neutral', 'negative')
+                assert result.health_implication in ("positive", "neutral", "negative")
                 assert len(result.description) > 0
 
 
@@ -379,10 +382,18 @@ class TestComputeWellnessScore:
         result = compute_wellness_score(signals)
 
         assert result.strongest_domain in (
-            'cardiovascular', 'sleep', 'activity', 'recovery', 'body_composition'
+            "cardiovascular",
+            "sleep",
+            "activity",
+            "recovery",
+            "body_composition",
         )
         assert result.weakest_domain in (
-            'cardiovascular', 'sleep', 'activity', 'recovery', 'body_composition'
+            "cardiovascular",
+            "sleep",
+            "activity",
+            "recovery",
+            "body_composition",
         )
 
     def test_interpretation_valid(self):
@@ -392,7 +403,7 @@ class TestComputeWellnessScore:
 
         result = compute_wellness_score(signals)
 
-        assert result.interpretation in ('Excellent', 'Good', 'Fair', 'Poor')
+        assert result.interpretation in ("Excellent", "Good", "Fair", "Poor")
 
 
 class TestFindCrossDomainInterconnections:
@@ -415,7 +426,14 @@ class TestFindCrossDomainInterconnections:
 
         result = find_cross_domain_interconnections(signals)
 
-        valid_domains = ('cardiovascular', 'sleep', 'activity', 'recovery', 'body_composition', 'mobility')
+        valid_domains = (
+            "cardiovascular",
+            "sleep",
+            "activity",
+            "recovery",
+            "body_composition",
+            "mobility",
+        )
         for ic in result:
             assert ic.source_domain in valid_domains
             assert ic.target_domain in valid_domains
@@ -424,7 +442,7 @@ class TestFindCrossDomainInterconnections:
             assert -1 <= ic.correlation <= 1
             assert 0 <= ic.p_value <= 1
             assert ic.lag_days >= 0
-            assert ic.strength in ('strong', 'moderate', 'weak')
+            assert ic.strength in ("strong", "moderate", "weak")
 
 
 class TestGenerateRecommendations:
@@ -439,7 +457,9 @@ class TestGenerateRecommendations:
         risk_factors = synthesize_risk_factors(wellness, interconnections, signals)
         patterns = detect_all_behavioral_patterns(signals)
 
-        result = generate_recommendations(wellness, interconnections, risk_factors, patterns)
+        result = generate_recommendations(
+            wellness, interconnections, risk_factors, patterns
+        )
 
         assert isinstance(result, list)
         assert all(isinstance(r, Recommendation) for r in result)
@@ -453,10 +473,12 @@ class TestGenerateRecommendations:
         risk_factors = synthesize_risk_factors(wellness, interconnections, signals)
         patterns = detect_all_behavioral_patterns(signals)
 
-        result = generate_recommendations(wellness, interconnections, risk_factors, patterns)
+        result = generate_recommendations(
+            wellness, interconnections, risk_factors, patterns
+        )
 
         for rec in result:
-            assert rec.priority in ('high', 'medium', 'low')
+            assert rec.priority in ("high", "medium", "low")
             assert len(rec.category) > 0
             assert len(rec.action) > 0
             assert len(rec.rationale) > 0
@@ -509,7 +531,7 @@ class TestGenerateHolisticInsight:
 
         result = generate_holistic_insight(inputs)
 
-        assert result.trajectory in ('improving', 'stable', 'declining', 'mixed')
+        assert result.trajectory in ("improving", "stable", "declining", "mixed")
         assert len(result.trajectory_details) > 0
 
     def test_has_confidence(self):
@@ -519,7 +541,7 @@ class TestGenerateHolisticInsight:
 
         result = generate_holistic_insight(inputs)
 
-        assert result.overall_confidence in ('high', 'moderate', 'low')
+        assert result.overall_confidence in ("high", "moderate", "low")
 
 
 class TestDataAdequacy:
@@ -544,7 +566,7 @@ class TestDataAdequacy:
             assert len(da.biomarker) > 0
             assert da.current_samples >= 0
             assert da.recommended_samples >= 0
-            assert da.status in ('sufficient', 'moderate', 'limited', 'missing')
+            assert da.status in ("sufficient", "moderate", "limited", "missing")
             assert 0 <= da.reliability_score <= 1
 
 
@@ -553,7 +575,7 @@ class TestEdgeCases:
 
     def test_handles_empty_dataframe(self):
         """Should handle empty DataFrame gracefully."""
-        df = pd.DataFrame({'time': [], 'biomarker_slug': [], 'value': []})
+        df = pd.DataFrame({"time": [], "biomarker_slug": [], "value": []})
         signals = aggregate_signals(df)
 
         result = compute_wellness_score(signals)
@@ -564,7 +586,11 @@ class TestEdgeCases:
     def test_handles_single_biomarker(self):
         """Should handle data with only one biomarker."""
         records = [
-            {'time': datetime.now() - timedelta(days=i), 'biomarker_slug': 'steps', 'value': 8000}
+            {
+                "time": datetime.now() - timedelta(days=i),
+                "biomarker_slug": "steps",
+                "value": 8000,
+            }
             for i in range(30)
         ]
         df = pd.DataFrame(records)
@@ -581,12 +607,12 @@ class TestEdgeCases:
 
         result = generate_holistic_insight(inputs)
 
-        assert result.overall_confidence == 'low'
+        assert result.overall_confidence == "low"
 
     def test_handles_nan_values(self):
         """Should handle NaN values in data."""
         df = make_test_signals(n_days=30)
-        df.loc[df.index[:5], 'value'] = np.nan
+        df.loc[df.index[:5], "value"] = np.nan
 
         signals = aggregate_signals(df)
 

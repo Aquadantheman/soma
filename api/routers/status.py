@@ -25,37 +25,38 @@ def get_status(
     total_signals = db.execute(text("SELECT COUNT(*) FROM signals")).scalar() or 0
 
     # Biomarkers with data
-    biomarkers_tracked = db.execute(
-        text("SELECT COUNT(DISTINCT biomarker_slug) FROM signals")
-    ).scalar() or 0
+    biomarkers_tracked = (
+        db.execute(text("SELECT COUNT(DISTINCT biomarker_slug) FROM signals")).scalar()
+        or 0
+    )
 
     # Sources with data
-    sources_active = db.execute(
-        text("SELECT COUNT(DISTINCT source_slug) FROM signals")
-    ).scalar() or 0
+    sources_active = (
+        db.execute(text("SELECT COUNT(DISTINCT source_slug) FROM signals")).scalar()
+        or 0
+    )
 
     # Baselines computed
-    baselines_computed = db.execute(
-        text("SELECT COUNT(DISTINCT biomarker_slug) FROM baselines")
-    ).scalar() or 0
+    baselines_computed = (
+        db.execute(
+            text("SELECT COUNT(DISTINCT biomarker_slug) FROM baselines")
+        ).scalar()
+        or 0
+    )
 
     # Latest ingest run
-    latest_ingest_result = db.execute(
-        text("""
+    latest_ingest_result = db.execute(text("""
             SELECT id, started_at, completed_at, source_slug, file_path,
                    records_parsed, records_written, records_skipped, errors, status
             FROM ingest_log
             ORDER BY started_at DESC
             LIMIT 1
-        """)
-    )
+        """))
     latest_row = latest_ingest_result.mappings().first()
     latest_ingest = IngestRun(**latest_row) if latest_row else None
 
     # Date range
-    range_result = db.execute(
-        text("SELECT MIN(time), MAX(time) FROM signals")
-    )
+    range_result = db.execute(text("SELECT MIN(time), MAX(time) FROM signals"))
     range_row = range_result.first()
     date_range = None
     if range_row and range_row[0]:
@@ -103,8 +104,7 @@ def get_biomarker_coverage(
 
     Shows how many signals, date range, and sources for each biomarker.
     """
-    result = db.execute(
-        text("""
+    result = db.execute(text("""
             SELECT
                 s.biomarker_slug,
                 bt.name,
@@ -119,7 +119,6 @@ def get_biomarker_coverage(
             JOIN biomarker_types bt ON s.biomarker_slug = bt.slug
             GROUP BY s.biomarker_slug, bt.name, bt.category, bt.unit
             ORDER BY signal_count DESC
-        """)
-    )
+        """))
     rows = result.mappings().all()
     return [dict(row) for row in rows]

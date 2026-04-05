@@ -21,15 +21,15 @@ import math
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Literal, Optional
+from typing import Literal, Optional
 
 import numpy as np
 from scipy import stats
 
-
 # =============================================================================
 # EVIDENCE STRENGTH (JEFFREYS' SCALE)
 # =============================================================================
+
 
 class EvidenceStrength(Enum):
     """Evidence strength according to Jeffreys' scale.
@@ -44,13 +44,14 @@ class EvidenceStrength(Enum):
     - BF = 1: No evidence
     - BF < 1: Evidence against
     """
-    DECISIVE = "decisive"           # BF > 100
-    VERY_STRONG = "very_strong"     # 30 < BF <= 100
-    STRONG = "strong"               # 10 < BF <= 30
-    MODERATE = "moderate"           # 3 < BF <= 10
-    WEAK = "weak"                   # 1 < BF <= 3
-    NONE = "none"                   # BF ≈ 1
-    AGAINST = "against"             # BF < 1
+
+    DECISIVE = "decisive"  # BF > 100
+    VERY_STRONG = "very_strong"  # 30 < BF <= 100
+    STRONG = "strong"  # 10 < BF <= 30
+    MODERATE = "moderate"  # 3 < BF <= 10
+    WEAK = "weak"  # 1 < BF <= 3
+    NONE = "none"  # BF ≈ 1
+    AGAINST = "against"  # BF < 1
 
 
 def interpret_bayes_factor(bf: float) -> EvidenceStrength:
@@ -75,6 +76,7 @@ def interpret_bayes_factor(bf: float) -> EvidenceStrength:
 # LITERATURE-BACKED PRIORS
 # =============================================================================
 
+
 @dataclass
 class InterventionPrior:
     """Literature-backed prior probability for an intervention's effect.
@@ -85,6 +87,7 @@ class InterventionPrior:
     - P(harm): Prior probability intervention hurts
     - P(null) = 1 - P(improvement) - P(harm)
     """
+
     intervention_category: str
     biomarker: str
     p_improvement: float  # Prior probability of positive effect
@@ -93,7 +96,7 @@ class InterventionPrior:
     effect_size_sd: float  # Uncertainty in expected effect size
     sources: list[str]  # Citations
     sample_size: int  # Combined N from studies
-    confidence: Literal['high', 'medium', 'low']  # Quality of evidence
+    confidence: Literal["high", "medium", "low"]  # Quality of evidence
 
     @property
     def p_null(self) -> float:
@@ -104,144 +107,141 @@ class InterventionPrior:
 # Literature-backed priors from meta-analyses
 LITERATURE_PRIORS: dict[tuple[str, str], InterventionPrior] = {
     # Meditation effects - strong evidence base
-    ('stress', 'hrv_sdnn'): InterventionPrior(
-        intervention_category='stress',
-        biomarker='hrv_sdnn',
+    ("stress", "hrv_sdnn"): InterventionPrior(
+        intervention_category="stress",
+        biomarker="hrv_sdnn",
         p_improvement=0.72,
         p_harm=0.03,
         expected_effect_size=0.45,
         effect_size_sd=0.20,
         sources=[
-            'Zou et al. (2018) Psychosom Med - Meta-analysis: d=0.45, n=1892',
-            'Pascoe et al. (2017) Stress Health - Meta-analysis: d=0.42, n=1034',
+            "Zou et al. (2018) Psychosom Med - Meta-analysis: d=0.45, n=1892",
+            "Pascoe et al. (2017) Stress Health - Meta-analysis: d=0.42, n=1034",
         ],
         sample_size=2926,
-        confidence='high'
+        confidence="high",
     ),
-    ('stress', 'resting_hr'): InterventionPrior(
-        intervention_category='stress',
-        biomarker='resting_hr',
+    ("stress", "resting_hr"): InterventionPrior(
+        intervention_category="stress",
+        biomarker="resting_hr",
         p_improvement=0.65,  # Lower HR is improvement
         p_harm=0.05,
         expected_effect_size=0.35,
         effect_size_sd=0.18,
         sources=[
-            'Pascoe et al. (2017) Stress Health - Resting HR reduction',
+            "Pascoe et al. (2017) Stress Health - Resting HR reduction",
         ],
         sample_size=1034,
-        confidence='medium'
+        confidence="medium",
     ),
-
     # Exercise effects - very strong evidence base
-    ('exercise', 'resting_hr'): InterventionPrior(
-        intervention_category='exercise',
-        biomarker='resting_hr',
+    ("exercise", "resting_hr"): InterventionPrior(
+        intervention_category="exercise",
+        biomarker="resting_hr",
         p_improvement=0.85,
         p_harm=0.02,
         expected_effect_size=0.65,
         effect_size_sd=0.25,
         sources=[
-            'Reimers et al. (2018) Sports Med - Meta-analysis: d=0.65, n=3452',
-            'Huang et al. (2005) Med Sci Sports Exerc - d=0.58, n=892',
+            "Reimers et al. (2018) Sports Med - Meta-analysis: d=0.65, n=3452",
+            "Huang et al. (2005) Med Sci Sports Exerc - d=0.58, n=892",
         ],
         sample_size=4344,
-        confidence='high'
+        confidence="high",
     ),
-    ('exercise', 'hrv_sdnn'): InterventionPrior(
-        intervention_category='exercise',
-        biomarker='hrv_sdnn',
+    ("exercise", "hrv_sdnn"): InterventionPrior(
+        intervention_category="exercise",
+        biomarker="hrv_sdnn",
         p_improvement=0.75,
         p_harm=0.05,
         expected_effect_size=0.50,
         effect_size_sd=0.22,
         sources=[
-            'Sandercock et al. (2005) Sports Med - Meta-analysis HRV',
+            "Sandercock et al. (2005) Sports Med - Meta-analysis HRV",
         ],
         sample_size=812,
-        confidence='medium'
+        confidence="medium",
     ),
-    ('exercise', 'vo2_max'): InterventionPrior(
-        intervention_category='exercise',
-        biomarker='vo2_max',
+    ("exercise", "vo2_max"): InterventionPrior(
+        intervention_category="exercise",
+        biomarker="vo2_max",
         p_improvement=0.90,
         p_harm=0.01,
         expected_effect_size=0.80,
         effect_size_sd=0.30,
         sources=[
-            'Weston et al. (2014) Sports Med - HIIT meta-analysis: d=0.80',
+            "Weston et al. (2014) Sports Med - HIIT meta-analysis: d=0.80",
         ],
         sample_size=1256,
-        confidence='high'
+        confidence="high",
     ),
-
     # Sleep interventions
-    ('sleep', 'sleep_duration'): InterventionPrior(
-        intervention_category='sleep',
-        biomarker='sleep_duration',
+    ("sleep", "sleep_duration"): InterventionPrior(
+        intervention_category="sleep",
+        biomarker="sleep_duration",
         p_improvement=0.60,
         p_harm=0.05,
         expected_effect_size=0.40,
         effect_size_sd=0.20,
         sources=[
-            'Irish et al. (2015) Ann Behav Med - Sleep hygiene meta-analysis',
+            "Irish et al. (2015) Ann Behav Med - Sleep hygiene meta-analysis",
         ],
         sample_size=2089,
-        confidence='medium'
+        confidence="medium",
     ),
-    ('sleep', 'hrv_sdnn'): InterventionPrior(
-        intervention_category='sleep',
-        biomarker='hrv_sdnn',
+    ("sleep", "hrv_sdnn"): InterventionPrior(
+        intervention_category="sleep",
+        biomarker="hrv_sdnn",
         p_improvement=0.55,
         p_harm=0.08,
         expected_effect_size=0.30,
         effect_size_sd=0.18,
         sources=[
-            'Tobaldini et al. (2013) Sleep - Sleep and autonomic function',
+            "Tobaldini et al. (2013) Sleep - Sleep and autonomic function",
         ],
         sample_size=456,
-        confidence='low'
+        confidence="low",
     ),
-
     # Supplements - generally weaker evidence
-    ('supplement', 'hrv_sdnn'): InterventionPrior(
-        intervention_category='supplement',
-        biomarker='hrv_sdnn',
+    ("supplement", "hrv_sdnn"): InterventionPrior(
+        intervention_category="supplement",
+        biomarker="hrv_sdnn",
         p_improvement=0.40,
         p_harm=0.10,
         expected_effect_size=0.25,
         effect_size_sd=0.15,
         sources=[
-            'General supplement literature - mixed results',
+            "General supplement literature - mixed results",
         ],
         sample_size=500,
-        confidence='low'
+        confidence="low",
     ),
-    ('supplement', 'resting_hr'): InterventionPrior(
-        intervention_category='supplement',
-        biomarker='resting_hr',
+    ("supplement", "resting_hr"): InterventionPrior(
+        intervention_category="supplement",
+        biomarker="resting_hr",
         p_improvement=0.35,
         p_harm=0.10,
         expected_effect_size=0.20,
         effect_size_sd=0.15,
         sources=[
-            'General supplement literature - mixed results',
+            "General supplement literature - mixed results",
         ],
         sample_size=500,
-        confidence='low'
+        confidence="low",
     ),
 }
 
 # Default skeptical prior for unknown intervention-biomarker pairs
 DEFAULT_PRIOR = InterventionPrior(
-    intervention_category='unknown',
-    biomarker='unknown',
+    intervention_category="unknown",
+    biomarker="unknown",
     p_improvement=0.33,  # Uninformative
     p_harm=0.10,
     expected_effect_size=0.20,
     effect_size_sd=0.30,
-    sources=['Skeptical default prior'],
+    sources=["Skeptical default prior"],
     sample_size=0,
-    confidence='low'
+    confidence="low",
 )
 
 
@@ -260,53 +260,53 @@ def get_prior(category: str, biomarker: str) -> InterventionPrior:
 
 # MCIDs from clinical literature - the smallest change that matters
 MCID_VALUES: dict[str, dict] = {
-    'hrv_sdnn': {
-        'value': 8.0,  # 8ms change in SDNN
-        'unit': 'ms',
-        'source': 'Nunan et al. (2010) Int J Cardiol',
-        'direction': 'higher_is_better',
+    "hrv_sdnn": {
+        "value": 8.0,  # 8ms change in SDNN
+        "unit": "ms",
+        "source": "Nunan et al. (2010) Int J Cardiol",
+        "direction": "higher_is_better",
     },
-    'hrv_rmssd': {
-        'value': 10.0,  # 10ms change in RMSSD
-        'unit': 'ms',
-        'source': 'Shaffer & Ginsberg (2017) Front Public Health',
-        'direction': 'higher_is_better',
+    "hrv_rmssd": {
+        "value": 10.0,  # 10ms change in RMSSD
+        "unit": "ms",
+        "source": "Shaffer & Ginsberg (2017) Front Public Health",
+        "direction": "higher_is_better",
     },
-    'resting_hr': {
-        'value': 3.0,  # 3bpm change
-        'unit': 'bpm',
-        'source': 'Reimers et al. (2018) Sports Med',
-        'direction': 'lower_is_better',
+    "resting_hr": {
+        "value": 3.0,  # 3bpm change
+        "unit": "bpm",
+        "source": "Reimers et al. (2018) Sports Med",
+        "direction": "lower_is_better",
     },
-    'resting_heart_rate': {
-        'value': 3.0,
-        'unit': 'bpm',
-        'source': 'Reimers et al. (2018) Sports Med',
-        'direction': 'lower_is_better',
+    "resting_heart_rate": {
+        "value": 3.0,
+        "unit": "bpm",
+        "source": "Reimers et al. (2018) Sports Med",
+        "direction": "lower_is_better",
     },
-    'sleep_duration': {
-        'value': 30.0,  # 30 minutes
-        'unit': 'minutes',
-        'source': 'Buysse et al. (2006) Sleep',
-        'direction': 'higher_is_better',
+    "sleep_duration": {
+        "value": 30.0,  # 30 minutes
+        "unit": "minutes",
+        "source": "Buysse et al. (2006) Sleep",
+        "direction": "higher_is_better",
     },
-    'vo2_max': {
-        'value': 3.5,  # 3.5 mL/kg/min (1 MET)
-        'unit': 'mL/kg/min',
-        'source': 'Kodama et al. (2009) JAMA',
-        'direction': 'higher_is_better',
+    "vo2_max": {
+        "value": 3.5,  # 3.5 mL/kg/min (1 MET)
+        "unit": "mL/kg/min",
+        "source": "Kodama et al. (2009) JAMA",
+        "direction": "higher_is_better",
     },
-    'body_fat_percentage': {
-        'value': 2.0,  # 2% body fat
-        'unit': '%',
-        'source': 'ACSM Guidelines',
-        'direction': 'lower_is_better',
+    "body_fat_percentage": {
+        "value": 2.0,  # 2% body fat
+        "unit": "%",
+        "source": "ACSM Guidelines",
+        "direction": "lower_is_better",
     },
-    'stress_score': {
-        'value': 10.0,  # 10 points on typical stress scale
-        'unit': 'points',
-        'source': 'Cohen Perceived Stress Scale',
-        'direction': 'lower_is_better',
+    "stress_score": {
+        "value": 10.0,  # 10 points on typical stress scale
+        "unit": "points",
+        "source": "Cohen Perceived Stress Scale",
+        "direction": "lower_is_better",
     },
 }
 
@@ -322,7 +322,7 @@ def is_clinically_meaningful(biomarker: str, absolute_change: float) -> bool:
     if mcid is None:
         # No MCID known - use effect size threshold instead
         return True  # Assume meaningful if we don't know
-    return abs(absolute_change) >= mcid['value']
+    return abs(absolute_change) >= mcid["value"]
 
 
 def compute_personal_mcid(before_std: float, multiplier: float = 0.5) -> float:
@@ -348,9 +348,7 @@ def compute_personal_mcid(before_std: float, multiplier: float = 0.5) -> float:
 
 
 def is_personally_meaningful(
-    absolute_change: float,
-    before_std: float,
-    threshold_multiplier: float = 0.5
+    absolute_change: float, before_std: float, threshold_multiplier: float = 0.5
 ) -> bool:
     """Check if change exceeds personal MCID.
 
@@ -366,10 +364,12 @@ def is_personally_meaningful(
 # DATA SUFFICIENCY ASSESSMENT
 # =============================================================================
 
+
 @dataclass
 class DataSufficiency:
     """Assessment of whether we have enough data for reliable conclusions."""
-    level: Literal['high', 'medium', 'low', 'insufficient']
+
+    level: Literal["high", "medium", "low", "insufficient"]
     n_before: int
     n_after: int
     min_recommended: int
@@ -396,7 +396,7 @@ def assess_data_sufficiency(n_before: int, n_after: int) -> DataSufficiency:
 
     if n_min < 5:
         return DataSufficiency(
-            level='insufficient',
+            level="insufficient",
             n_before=n_before,
             n_after=n_after,
             min_recommended=14,
@@ -405,7 +405,7 @@ def assess_data_sufficiency(n_before: int, n_after: int) -> DataSufficiency:
         )
     elif n_min < 14:
         return DataSufficiency(
-            level='low',
+            level="low",
             n_before=n_before,
             n_after=n_after,
             min_recommended=14,
@@ -414,7 +414,7 @@ def assess_data_sufficiency(n_before: int, n_after: int) -> DataSufficiency:
         )
     elif n_min < 30:
         return DataSufficiency(
-            level='medium',
+            level="medium",
             n_before=n_before,
             n_after=n_after,
             min_recommended=30,
@@ -423,7 +423,7 @@ def assess_data_sufficiency(n_before: int, n_after: int) -> DataSufficiency:
         )
     else:
         return DataSufficiency(
-            level='high',
+            level="high",
             n_before=n_before,
             n_after=n_after,
             min_recommended=30,
@@ -436,14 +436,16 @@ def assess_data_sufficiency(n_before: int, n_after: int) -> DataSufficiency:
 # CONFLICT DETECTION
 # =============================================================================
 
+
 @dataclass
 class BiomarkerConflict:
     """Represents conflicting signals between biomarkers."""
+
     biomarker_improved: str
     biomarker_worsened: str
     improved_p: float  # P(improvement) for the improved one
     worsened_p: float  # P(harm) for the worsened one
-    severity: Literal['mild', 'moderate', 'severe']
+    severity: Literal["mild", "moderate", "severe"]
     interpretation: str
 
 
@@ -467,8 +469,14 @@ def detect_biomarker_conflicts(
     conflicts = []
 
     # Find biomarkers that improved vs worsened
-    improved = [(e.biomarker, e.p_improvement) for e in estimates if e.p_improvement >= conflict_threshold]
-    worsened = [(e.biomarker, e.p_harm) for e in estimates if e.p_harm >= conflict_threshold]
+    improved = [
+        (e.biomarker, e.p_improvement)
+        for e in estimates
+        if e.p_improvement >= conflict_threshold
+    ]
+    worsened = [
+        (e.biomarker, e.p_harm) for e in estimates if e.p_harm >= conflict_threshold
+    ]
 
     # Check for conflicts
     for imp_bio, imp_p in improved:
@@ -477,11 +485,11 @@ def detect_biomarker_conflicts(
                 # Determine severity
                 avg_confidence = (imp_p + harm_p) / 2
                 if avg_confidence >= 0.85:
-                    severity = 'severe'
+                    severity = "severe"
                 elif avg_confidence >= 0.70:
-                    severity = 'moderate'
+                    severity = "moderate"
                 else:
-                    severity = 'mild'
+                    severity = "mild"
 
                 conflict = BiomarkerConflict(
                     biomarker_improved=imp_bio,
@@ -504,14 +512,16 @@ def detect_biomarker_conflicts(
 # PRIOR TRANSPARENCY
 # =============================================================================
 
+
 @dataclass
 class PriorInfluence:
     """Quantifies how much the prior affected the conclusion."""
+
     data_only_p_improvement: float  # P(improvement) using only personal data
     prior_combined_p_improvement: float  # P(improvement) with prior
     prior_influence_points: float  # Difference in percentage points
-    prior_influence_direction: Literal['strengthened', 'weakened', 'minimal']
-    prior_strength: Literal['strong', 'moderate', 'weak']
+    prior_influence_direction: Literal["strengthened", "weakened", "minimal"]
+    prior_strength: Literal["strong", "moderate", "weak"]
     interpretation: str
 
 
@@ -527,21 +537,21 @@ def compute_prior_influence(
     (data-only analysis).
     """
     # Compute data-only probability using uninformative prior
-    uninformative_prior = InterventionPrior(
-        intervention_category='uninformative',
-        biomarker='any',
+    _uninformative_prior = InterventionPrior(
+        intervention_category="uninformative",
+        biomarker="any",
         p_improvement=0.33,
         p_harm=0.33,
         expected_effect_size=0.0,
         effect_size_sd=1.0,  # Very wide
-        sources=['Uninformative prior'],
+        sources=["Uninformative prior"],
         sample_size=0,
-        confidence='low'
+        confidence="low",
     )
 
     # Simple approximation: with uninformative prior, posterior ≈ likelihood-based
     # Using effect size directly
-    se_d = math.sqrt((1/max(n, 2)) + (observed_d**2 / (2*max(n, 2))))
+    se_d = math.sqrt((1 / max(n, 2)) + (observed_d**2 / (2 * max(n, 2))))
 
     # Data-only: P(d > 0) under assumption of centered prior
     if se_d > 0:
@@ -555,24 +565,24 @@ def compute_prior_influence(
     influence_points = influence * 100  # Convert to percentage points
 
     if abs(influence_points) < 5:
-        direction = 'minimal'
+        direction = "minimal"
     elif influence_points > 0:
-        direction = 'strengthened'
+        direction = "strengthened"
     else:
-        direction = 'weakened'
+        direction = "weakened"
 
     # Prior strength based on sample size and confidence
-    if prior.sample_size > 1000 and prior.confidence == 'high':
-        prior_strength = 'strong'
-    elif prior.sample_size > 200 or prior.confidence == 'medium':
-        prior_strength = 'moderate'
+    if prior.sample_size > 1000 and prior.confidence == "high":
+        prior_strength = "strong"
+    elif prior.sample_size > 200 or prior.confidence == "medium":
+        prior_strength = "moderate"
     else:
-        prior_strength = 'weak'
+        prior_strength = "weak"
 
     # Interpretation
     if abs(influence_points) < 5:
         interp = "Prior had minimal influence. Conclusion driven by your personal data."
-    elif direction == 'strengthened':
+    elif direction == "strengthened":
         interp = (
             f"Prior evidence increased confidence by {abs(influence_points):.0f} points. "
             f"Literature supports this intervention's effectiveness."
@@ -597,6 +607,7 @@ def compute_prior_influence(
 # BAYESIAN ANALYSIS RESULTS
 # =============================================================================
 
+
 @dataclass
 class BayesianEffectEstimate:
     """Bayesian estimate of intervention effect on a biomarker.
@@ -607,6 +618,7 @@ class BayesianEffectEstimate:
     - Evidence strength classification
     - Plain language interpretation
     """
+
     biomarker: str
 
     # Posterior probabilities (these sum to 1)
@@ -666,6 +678,7 @@ class BayesianInterventionAnalysis:
     Aggregates results across all analyzed biomarkers with
     an overall probability assessment.
     """
+
     intervention_name: str
     intervention_category: str
     analysis_date: datetime
@@ -680,14 +693,14 @@ class BayesianInterventionAnalysis:
 
     # Summary
     overall_verdict: Literal[
-        'probably_beneficial',
-        'possibly_beneficial',
-        'uncertain',
-        'possibly_harmful',
-        'probably_harmful',
-        'conflicting_signals'  # New: when biomarkers disagree
+        "probably_beneficial",
+        "possibly_beneficial",
+        "uncertain",
+        "possibly_harmful",
+        "probably_harmful",
+        "conflicting_signals",  # New: when biomarkers disagree
     ]
-    confidence_level: Literal['high', 'medium', 'low']
+    confidence_level: Literal["high", "medium", "low"]
 
     # Conflict detection
     has_conflicts: bool
@@ -695,14 +708,14 @@ class BayesianInterventionAnalysis:
     conflict_warning: Optional[str]
 
     # Overall data sufficiency
-    overall_data_sufficiency: Literal['high', 'medium', 'low', 'insufficient']
+    overall_data_sufficiency: Literal["high", "medium", "low", "insufficient"]
     data_sufficiency_warning: Optional[str]
 
     # Correlation adjustment (accounts for biomarker redundancy)
-    correlation_adjustment: Optional['CorrelationAdjustment'] = None
+    correlation_adjustment: Optional["CorrelationAdjustment"] = None
 
     # Temporal adjustments (regression to mean, seasonality, trend)
-    temporal_adjustments: Optional[dict[str, 'TemporalAdjustment']] = None
+    temporal_adjustments: Optional[dict[str, "TemporalAdjustment"]] = None
     temporal_adjustment_warning: Optional[str] = None
 
     # Key insight in plain language
@@ -717,6 +730,7 @@ class BayesianInterventionAnalysis:
 # =============================================================================
 # CORRELATION ADJUSTMENT FOR BIOMARKER REDUNDANCY
 # =============================================================================
+
 
 @dataclass
 class CorrelationAdjustment:
@@ -733,6 +747,7 @@ class CorrelationAdjustment:
     - Nyholt (2004) Am J Hum Genet - Effective number of independent tests
     - Li & Ji (2005) Heredity - Improved effective N estimation
     """
+
     n_biomarkers: int
     effective_n: float  # Effective number of independent signals
     redundancy_factor: float  # n_biomarkers / effective_n (>1 means redundancy)
@@ -754,31 +769,28 @@ def compute_known_correlations() -> dict[tuple[str, str], float]:
     """
     return {
         # HR and HRV are strongly inversely correlated
-        ('resting_hr', 'hrv_sdnn'): -0.65,
-        ('resting_hr', 'hrv_rmssd'): -0.60,
-        ('resting_heart_rate', 'hrv_sdnn'): -0.65,
-        ('resting_heart_rate', 'hrv_rmssd'): -0.60,
-
+        ("resting_hr", "hrv_sdnn"): -0.65,
+        ("resting_hr", "hrv_rmssd"): -0.60,
+        ("resting_heart_rate", "hrv_sdnn"): -0.65,
+        ("resting_heart_rate", "hrv_rmssd"): -0.60,
         # HRV measures are highly correlated with each other
-        ('hrv_sdnn', 'hrv_rmssd'): 0.85,
-
+        ("hrv_sdnn", "hrv_rmssd"): 0.85,
         # Sleep metrics correlations
-        ('sleep_duration', 'sleep_efficiency'): 0.45,
-        ('sleep_duration', 'deep_sleep'): 0.55,
-        ('deep_sleep', 'rem_sleep'): 0.30,
-
+        ("sleep_duration", "sleep_efficiency"): 0.45,
+        ("sleep_duration", "deep_sleep"): 0.55,
+        ("deep_sleep", "rem_sleep"): 0.30,
         # Activity metrics
-        ('steps', 'active_calories'): 0.75,
-        ('steps', 'active_minutes'): 0.70,
-
+        ("steps", "active_calories"): 0.75,
+        ("steps", "active_minutes"): 0.70,
         # Recovery and stress
-        ('hrv_sdnn', 'recovery_score'): 0.60,
-        ('resting_hr', 'stress_score'): 0.40,
+        ("hrv_sdnn", "recovery_score"): 0.60,
+        ("resting_hr", "stress_score"): 0.40,
     }
 
 
-def get_correlation(bio1: str, bio2: str,
-                    known_correlations: Optional[dict] = None) -> float:
+def get_correlation(
+    bio1: str, bio2: str, known_correlations: Optional[dict] = None
+) -> float:
     """Get correlation between two biomarkers.
 
     Uses known physiological correlations if available,
@@ -804,9 +816,9 @@ def get_correlation(bio1: str, bio2: str,
     return 0.15
 
 
-def compute_correlation_matrix(biomarkers: list[str],
-                               known_correlations: Optional[dict] = None
-                               ) -> np.ndarray:
+def compute_correlation_matrix(
+    biomarkers: list[str], known_correlations: Optional[dict] = None
+) -> np.ndarray:
     """Build correlation matrix for a set of biomarkers."""
     n = len(biomarkers)
     R = np.eye(n)
@@ -836,12 +848,12 @@ def compute_effective_n_eigenvalue(R: np.ndarray) -> float:
     eigenvalues = np.clip(eigenvalues, 0, None)
 
     sum_lambda = np.sum(eigenvalues)
-    sum_lambda_sq = np.sum(eigenvalues ** 2)
+    sum_lambda_sq = np.sum(eigenvalues**2)
 
     if sum_lambda_sq < 1e-10:
         return 1.0
 
-    n_eff = (sum_lambda ** 2) / sum_lambda_sq
+    n_eff = (sum_lambda**2) / sum_lambda_sq
     return max(1.0, n_eff)  # At least 1
 
 
@@ -900,7 +912,7 @@ def compute_correlation_adjustment(
             correlation_matrix=None,
             biomarker_weights={bio: 1.0 for bio in biomarkers},
             adjustment_applied=False,
-            explanation="Single biomarker, no correlation adjustment needed."
+            explanation="Single biomarker, no correlation adjustment needed.",
         )
 
     # Build correlation matrix
@@ -950,6 +962,7 @@ def compute_correlation_adjustment(
 # TEMPORAL CONFOUND ADJUSTMENTS
 # =============================================================================
 
+
 @dataclass
 class TemporalAdjustment:
     """Adjustments for temporal confounds in before/after comparisons.
@@ -964,6 +977,7 @@ class TemporalAdjustment:
     - Barone et al. (2021) - Seasonality in cardiovascular measures
     - Kontopantelis et al. (2015) BMJ - Interrupted time series analysis
     """
+
     # Raw values
     raw_before_mean: float
     raw_after_mean: float
@@ -989,13 +1003,15 @@ class TemporalAdjustment:
     # Combined adjustment
     fully_adjusted_change: float
     adjustment_magnitude: float  # Total adjustment as % of raw change
-    confidence_in_adjustment: Literal['high', 'medium', 'low']
+    confidence_in_adjustment: Literal["high", "medium", "low"]
     explanation: str
 
 
-def estimate_reliability(values: Optional[list[float]],
-                         known_cv: Optional[float] = None,
-                         biomarker: Optional[str] = None) -> float:
+def estimate_reliability(
+    values: Optional[list[float]],
+    known_cv: Optional[float] = None,
+    biomarker: Optional[str] = None,
+) -> float:
     """Estimate measurement reliability (test-retest correlation).
 
     Reliability determines how much regression to mean to expect.
@@ -1009,15 +1025,15 @@ def estimate_reliability(values: Optional[list[float]],
     # Literature-based defaults for common biomarkers
     # Based on typical day-to-day reliability
     DEFAULT_RELIABILITY = {
-        'resting_hr': 0.85,
-        'resting_heart_rate': 0.85,
-        'hrv_sdnn': 0.70,  # HRV is more variable
-        'hrv_rmssd': 0.65,
-        'sleep_duration': 0.60,
-        'steps': 0.50,  # Highly variable
-        'weight': 0.98,  # Very stable
-        'blood_pressure': 0.75,
-        'spo2': 0.90,
+        "resting_hr": 0.85,
+        "resting_heart_rate": 0.85,
+        "hrv_sdnn": 0.70,  # HRV is more variable
+        "hrv_rmssd": 0.65,
+        "sleep_duration": 0.60,
+        "steps": 0.50,  # Highly variable
+        "weight": 0.98,  # Very stable
+        "blood_pressure": 0.75,
+        "spo2": 0.90,
     }
 
     if biomarker and biomarker.lower() in DEFAULT_RELIABILITY:
@@ -1033,7 +1049,7 @@ def estimate_reliability(values: Optional[list[float]],
         odd = values[::2]
         even = values[1::2]
         if len(odd) >= 2 and len(even) >= 2:
-            corr = np.corrcoef(odd[:len(even)], even[:len(odd)])[0, 1]
+            corr = np.corrcoef(odd[: len(even)], even[: len(odd)])[0, 1]
             if not np.isnan(corr):
                 # Spearman-Brown prophecy formula for full-length reliability
                 return max(0.3, min(0.99, 2 * corr / (1 + corr)))
@@ -1082,19 +1098,19 @@ def compute_regression_to_mean(
 
 def get_season(date) -> str:
     """Determine season from date (Northern Hemisphere)."""
-    if hasattr(date, 'month'):
+    if hasattr(date, "month"):
         month = date.month
     else:
         month = date  # Assume numeric month passed
 
     if month in (12, 1, 2):
-        return 'winter'
+        return "winter"
     elif month in (3, 4, 5):
-        return 'spring'
+        return "spring"
     elif month in (6, 7, 8):
-        return 'summer'
+        return "summer"
     else:
-        return 'fall'
+        return "fall"
 
 
 def compute_seasonal_effect(
@@ -1113,16 +1129,16 @@ def compute_seasonal_effect(
     # Seasonal effects as (summer - winter) standardized difference
     # Positive = higher in summer
     SEASONAL_EFFECTS = {
-        'steps': 0.35,  # More active in summer
-        'active_minutes': 0.40,
-        'active_calories': 0.35,
-        'resting_hr': -0.15,  # Slightly lower in winter
-        'resting_heart_rate': -0.15,
-        'hrv_sdnn': 0.10,  # Slightly higher in summer
-        'hrv_rmssd': 0.10,
-        'sleep_duration': -0.20,  # Longer sleep in winter
-        'vitamin_d': 0.80,  # Much higher in summer
-        'weight': -0.10,  # Slightly lower in summer
+        "steps": 0.35,  # More active in summer
+        "active_minutes": 0.40,
+        "active_calories": 0.35,
+        "resting_hr": -0.15,  # Slightly lower in winter
+        "resting_heart_rate": -0.15,
+        "hrv_sdnn": 0.10,  # Slightly higher in summer
+        "hrv_rmssd": 0.10,
+        "sleep_duration": -0.20,  # Longer sleep in winter
+        "vitamin_d": 0.80,  # Much higher in summer
+        "weight": -0.10,  # Slightly lower in summer
     }
 
     # Get base effect
@@ -1132,7 +1148,7 @@ def compute_seasonal_effect(
         return 0.0
 
     # Convert seasons to numeric (0=winter, 1=spring, 2=summer, 3=fall)
-    season_num = {'winter': 0, 'spring': 1, 'summer': 2, 'fall': 3}
+    season_num = {"winter": 0, "spring": 1, "summer": 2, "fall": 3}
     before_num = season_num.get(before_season.lower(), 0)
     after_num = season_num.get(after_season.lower(), 0)
 
@@ -1162,9 +1178,11 @@ def compute_trend_effect(
     Returns:
         (expected_change, slope) - expected change from trend extrapolation
     """
-    if (pre_intervention_values is None or
-        pre_intervention_times is None or
-        len(pre_intervention_values) < 5):
+    if (
+        pre_intervention_values is None
+        or pre_intervention_times is None
+        or len(pre_intervention_values) < 5
+    ):
         return 0.0, None
 
     values = np.array(pre_intervention_values)
@@ -1235,12 +1253,14 @@ def compute_temporal_adjustment(
     rtm_effect, baseline_z, _ = compute_regression_to_mean(
         raw_before, population_mean, before_std, reliability
     )
-    rtm_adjusted = raw_change + rtm_effect  # Add because rtm_effect is opposite of expected change
+    rtm_adjusted = (
+        raw_change + rtm_effect
+    )  # Add because rtm_effect is opposite of expected change
 
     # 2. Seasonal Adjustment
     if before_dates and after_dates:
-        before_season = get_season(before_dates[len(before_dates)//2])
-        after_season = get_season(after_dates[len(after_dates)//2])
+        before_season = get_season(before_dates[len(before_dates) // 2])
+        after_season = get_season(after_dates[len(after_dates) // 2])
     else:
         before_season = "unknown"
         after_season = "unknown"
@@ -1254,11 +1274,13 @@ def compute_temporal_adjustment(
     if before_dates and len(before_values) >= 5:
         # Convert dates to numeric days
         try:
-            if hasattr(before_dates[0], 'toordinal'):
-                times = [d.toordinal() - before_dates[0].toordinal() for d in before_dates]
+            if hasattr(before_dates[0], "toordinal"):
+                times = [
+                    d.toordinal() - before_dates[0].toordinal() for d in before_dates
+                ]
             else:
                 times = list(range(len(before_values)))
-        except:
+        except Exception:
             times = list(range(len(before_values)))
 
         post_days = len(after_values)
@@ -1286,19 +1308,21 @@ def compute_temporal_adjustment(
         adjustment_pct = 0.0
 
     # Confidence in adjustment
-    if (len(before_values) >= 14 and
-        before_dates is not None and
-        abs(baseline_z) < 2.0):
-        confidence = 'high'
+    if len(before_values) >= 14 and before_dates is not None and abs(baseline_z) < 2.0:
+        confidence = "high"
     elif len(before_values) >= 7:
-        confidence = 'medium'
+        confidence = "medium"
     else:
-        confidence = 'low'
+        confidence = "low"
 
     # Generate explanation
     explanations = []
     if abs(rtm_effect) > 0.1 * before_std:
-        direction = "regression toward average" if rtm_effect * raw_change > 0 else "regression away from average"
+        direction = (
+            "regression toward average"
+            if rtm_effect * raw_change > 0
+            else "regression away from average"
+        )
         explanations.append(
             f"Baseline was {abs(baseline_z):.1f}σ from average; "
             f"expected {direction} of {abs(rtm_effect):.2f}"
@@ -1319,7 +1343,9 @@ def compute_temporal_adjustment(
         explanation = "Minimal temporal confounds detected."
     else:
         explanation = " | ".join(explanations)
-        explanation += f" | Adjusted change: {fully_adjusted:+.2f} (raw: {raw_change:+.2f})"
+        explanation += (
+            f" | Adjusted change: {fully_adjusted:+.2f} (raw: {raw_change:+.2f})"
+        )
 
     return TemporalAdjustment(
         raw_before_mean=raw_before,
@@ -1347,6 +1373,7 @@ def compute_temporal_adjustment(
 # BAYESIAN INFERENCE ENGINE
 # =============================================================================
 
+
 def compute_likelihood_ratio(
     observed_d: float,
     n: int,
@@ -1370,7 +1397,7 @@ def compute_likelihood_ratio(
         Likelihood ratio
     """
     # Standard error of Cohen's d
-    se_d = math.sqrt((1/n) + (observed_d**2 / (2*n)))
+    se_d = math.sqrt((1 / n) + (observed_d**2 / (2 * n)))
 
     # Combined SD under each hypothesis (prior SD + sampling error)
     sd_h1 = math.sqrt(effect_sd**2 + se_d**2)
@@ -1390,7 +1417,7 @@ def compute_posterior_probabilities(
     observed_d: float,
     n: int,
     prior: InterventionPrior,
-    health_direction: Literal['positive', 'negative'],
+    health_direction: Literal["positive", "negative"],
     absolute_change: float = 0.0,
 ) -> tuple[float, float, float]:
     """Compute posterior probabilities for improvement/null/harm.
@@ -1407,7 +1434,7 @@ def compute_posterior_probabilities(
     """
     # Determine if the change was health-positive
     # Use absolute_change sign combined with health_direction
-    if health_direction == 'negative':
+    if health_direction == "negative":
         # Lower is better (e.g., resting HR)
         # Negative change = health improvement
         is_health_positive = absolute_change < 0
@@ -1433,17 +1460,19 @@ def compute_posterior_probabilities(
     d_harm = -prior.expected_effect_size  # Negative
 
     # Compute likelihoods
-    se_d = math.sqrt((1/max(n, 2)) + (observed_d**2 / (2*max(n, 2))))
+    se_d = math.sqrt((1 / max(n, 2)) + (observed_d**2 / (2 * max(n, 2))))
     sd_effect = prior.effect_size_sd
 
     # P(observed | improvement)
-    lik_imp = stats.norm.pdf(observed_d, loc=d_improvement,
-                              scale=math.sqrt(sd_effect**2 + se_d**2))
+    lik_imp = stats.norm.pdf(
+        observed_d, loc=d_improvement, scale=math.sqrt(sd_effect**2 + se_d**2)
+    )
     # P(observed | null)
     lik_null = stats.norm.pdf(observed_d, loc=d_null, scale=se_d)
     # P(observed | harm)
-    lik_harm = stats.norm.pdf(observed_d, loc=d_harm,
-                               scale=math.sqrt(sd_effect**2 + se_d**2))
+    lik_harm = stats.norm.pdf(
+        observed_d, loc=d_harm, scale=math.sqrt(sd_effect**2 + se_d**2)
+    )
 
     # Bayes' theorem: P(H|D) ∝ P(D|H) * P(H)
     post_imp = lik_imp * p_imp_prior
@@ -1485,7 +1514,7 @@ def compute_effect_size_credible_interval(
     n = (n_before + n_after) / 2
 
     # Approximate standard error of d
-    se_d = math.sqrt((1/max(n, 2)) + (observed_d**2 / (2*max(n, 2))))
+    se_d = math.sqrt((1 / max(n, 2)) + (observed_d**2 / (2 * max(n, 2))))
 
     # Posterior parameters (conjugate normal-normal)
     prior_precision = 1 / (prior_sd**2)
@@ -1493,12 +1522,14 @@ def compute_effect_size_credible_interval(
 
     posterior_precision = prior_precision + data_precision
     posterior_var = 1 / posterior_precision
-    posterior_mean = (prior_precision * prior_mean + data_precision * observed_d) / posterior_precision
+    posterior_mean = (
+        prior_precision * prior_mean + data_precision * observed_d
+    ) / posterior_precision
     posterior_sd = math.sqrt(posterior_var)
 
     # Credible interval
     alpha = 1 - credible_level
-    z = stats.norm.ppf(1 - alpha/2)
+    z = stats.norm.ppf(1 - alpha / 2)
 
     lower = posterior_mean - z * posterior_sd
     upper = posterior_mean + z * posterior_sd
@@ -1519,23 +1550,20 @@ def generate_interpretation(
     """
     pct = int(p_improvement * 100)
 
-    # Direction-aware language
-    if effect_size > 0:
-        direction = "improved"
-    else:
-        direction = "declined"
+    # Direction-aware language (used for context but not in output)
+    _direction = "improved" if effect_size > 0 else "declined"
 
-    # Confidence level based on posterior probability
+    # Confidence level based on posterior probability (used for context)
     if pct >= 90:
-        confidence = "strong evidence"
+        _confidence = "strong evidence"
     elif pct >= 75:
-        confidence = "good evidence"
+        _confidence = "good evidence"
     elif pct >= 60:
-        confidence = "moderate evidence"
+        _confidence = "moderate evidence"
     elif pct >= 40:
-        confidence = "weak evidence"
+        _confidence = "weak evidence"
     else:
-        confidence = "little evidence"
+        _confidence = "little evidence"
 
     # Clinical meaningfulness caveat
     meaning_note = ""
@@ -1563,6 +1591,7 @@ def generate_interpretation(
 # =============================================================================
 # MAIN ANALYSIS FUNCTION
 # =============================================================================
+
 
 def analyze_intervention_bayesian(
     intervention_name: str,
@@ -1608,24 +1637,24 @@ def analyze_intervention_bayesian(
     temporal_adjustments = {}  # Store per-biomarker temporal adjustments
 
     for result in biomarker_results:
-        biomarker = result['biomarker']
-        n_before = result['n_before']
-        n_after = result['n_after']
-        health_direction = result.get('health_direction', 'positive')
+        biomarker = result["biomarker"]
+        n_before = result["n_before"]
+        n_after = result["n_after"]
+        health_direction = result.get("health_direction", "positive")
 
         # Check what data is available
-        has_raw_data = 'before_values' in result and 'after_values' in result
-        has_dates = 'before_dates' in result and 'after_dates' in result
-        has_summary = 'effect_size' in result and 'absolute_change' in result
+        has_raw_data = "before_values" in result and "after_values" in result
+        _has_dates = "before_dates" in result and "after_dates" in result  # noqa: F841
+        has_summary = "effect_size" in result and "absolute_change" in result
 
         # Compute or extract values based on available data
         if has_raw_data:
             # Raw data available - compute everything and apply temporal adjustment
-            before_values = result['before_values']
-            after_values = result['after_values']
-            before_dates = result.get('before_dates')
-            after_dates = result.get('after_dates')
-            population_mean = result.get('population_mean')
+            before_values = result["before_values"]
+            after_values = result["after_values"]
+            before_dates = result.get("before_dates")
+            after_dates = result.get("after_dates")
+            population_mean = result.get("population_mean")
 
             # Compute temporal adjustment
             temp_adj = compute_temporal_adjustment(
@@ -1645,9 +1674,11 @@ def analyze_intervention_bayesian(
 
         elif has_summary:
             # Summary statistics only - use as provided
-            effect_size = result['effect_size']
-            absolute_change = result['absolute_change']
-            before_std = result.get('before_std', abs(absolute_change) / max(abs(effect_size), 0.01))
+            effect_size = result["effect_size"]
+            absolute_change = result["absolute_change"]
+            before_std = result.get(
+                "before_std", abs(absolute_change) / max(abs(effect_size), 0.01)
+            )
             # No temporal adjustment possible
             temporal_adjustments[biomarker] = None
 
@@ -1725,10 +1756,10 @@ def analyze_intervention_bayesian(
             effect_size_ci_lower=ci_lower,
             effect_size_ci_upper=ci_upper,
             is_clinically_meaningful=is_clin_meaningful,
-            mcid_threshold=mcid['value'] if mcid else None,
+            mcid_threshold=mcid["value"] if mcid else None,
             personal_mcid=personal_mcid_value,
             is_personally_meaningful=is_pers_meaningful,
-            prior_source=prior.sources[0] if prior.sources else 'default',
+            prior_source=prior.sources[0] if prior.sources else "default",
             prior_confidence=prior.confidence,
             prior_p_improvement=prior.p_improvement,
             prior_influence=prior_infl,
@@ -1744,7 +1775,7 @@ def analyze_intervention_bayesian(
     has_conflicts = len(conflicts) > 0
     conflict_warning = None
     if has_conflicts:
-        severe_conflicts = [c for c in conflicts if c.severity == 'severe']
+        severe_conflicts = [c for c in conflicts if c.severity == "severe"]
         if severe_conflicts:
             conflict_warning = (
                 f"CRITICAL: Severe conflicting signals detected. "
@@ -1754,23 +1785,23 @@ def analyze_intervention_bayesian(
             )
         else:
             conflict_warning = (
-                f"WARNING: Some biomarkers show conflicting responses. "
-                f"Review individual biomarker results carefully."
+                "WARNING: Some biomarkers show conflicting responses. "
+                "Review individual biomarker results carefully."
             )
 
     # Assess overall data sufficiency
     sufficiency_levels = [e.data_sufficiency.level for e in estimates]
-    if 'insufficient' in sufficiency_levels:
-        overall_data_suff = 'insufficient'
-    elif all(s == 'high' for s in sufficiency_levels):
-        overall_data_suff = 'high'
-    elif 'low' in sufficiency_levels:
-        overall_data_suff = 'low'
+    if "insufficient" in sufficiency_levels:
+        overall_data_suff = "insufficient"
+    elif all(s == "high" for s in sufficiency_levels):
+        overall_data_suff = "high"
+    elif "low" in sufficiency_levels:
+        overall_data_suff = "low"
     else:
-        overall_data_suff = 'medium'
+        overall_data_suff = "medium"
 
     data_suff_warning = None
-    if overall_data_suff in ('low', 'insufficient'):
+    if overall_data_suff in ("low", "insufficient"):
         min_n = min(e.n_before for e in estimates) if estimates else 0
         data_suff_warning = (
             f"Limited data (minimum n={min_n}). "
@@ -1804,16 +1835,18 @@ def analyze_intervention_bayesian(
 
         total_weight = sum(combined_weights)
         if total_weight > 0:
-            overall_p_beneficial = sum(
-                e.p_improvement * w
-                for e, w in zip(estimates, combined_weights)
-            ) / total_weight
-            overall_p_harmful = sum(
-                e.p_harm * w
-                for e, w in zip(estimates, combined_weights)
-            ) / total_weight
+            overall_p_beneficial = (
+                sum(e.p_improvement * w for e, w in zip(estimates, combined_weights))
+                / total_weight
+            )
+            overall_p_harmful = (
+                sum(e.p_harm * w for e, w in zip(estimates, combined_weights))
+                / total_weight
+            )
         else:
-            overall_p_beneficial = sum(e.p_improvement for e in estimates) / len(estimates)
+            overall_p_beneficial = sum(e.p_improvement for e in estimates) / len(
+                estimates
+            )
             overall_p_harmful = sum(e.p_harm for e in estimates) / len(estimates)
 
         overall_p_neutral = 1.0 - overall_p_beneficial - overall_p_harmful
@@ -1828,51 +1861,51 @@ def analyze_intervention_bayesian(
 
     # Determine overall verdict
     # IMPORTANT: Conflicts override the standard verdict
-    if has_conflicts and any(c.severity in ('severe', 'moderate') for c in conflicts):
-        verdict = 'conflicting_signals'
-        confidence = 'low'
+    if has_conflicts and any(c.severity in ("severe", "moderate") for c in conflicts):
+        verdict = "conflicting_signals"
+        confidence = "low"
     elif overall_p_beneficial >= 0.80:
-        verdict = 'probably_beneficial'
-        confidence = 'high'
+        verdict = "probably_beneficial"
+        confidence = "high"
     elif overall_p_beneficial >= 0.60:
-        verdict = 'possibly_beneficial'
-        confidence = 'medium'
+        verdict = "possibly_beneficial"
+        confidence = "medium"
     elif overall_p_harmful >= 0.60:
-        verdict = 'possibly_harmful'
-        confidence = 'medium'
+        verdict = "possibly_harmful"
+        confidence = "medium"
     elif overall_p_harmful >= 0.80:
-        verdict = 'probably_harmful'
-        confidence = 'high'
+        verdict = "probably_harmful"
+        confidence = "high"
     else:
-        verdict = 'uncertain'
-        confidence = 'low'
+        verdict = "uncertain"
+        confidence = "low"
 
     # Adjust confidence based on data sufficiency
-    if overall_data_suff == 'insufficient':
-        confidence = 'low'
-    elif overall_data_suff == 'low' and confidence == 'high':
-        confidence = 'medium'
+    if overall_data_suff == "insufficient":
+        confidence = "low"
+    elif overall_data_suff == "low" and confidence == "high":
+        confidence = "medium"
 
     # Generate primary statement
     pct = int(overall_p_beneficial * 100)
-    if verdict == 'conflicting_signals':
+    if verdict == "conflicting_signals":
         primary = (
             f"CONFLICTING SIGNALS: '{intervention_name}' shows mixed effects. "
             f"Some biomarkers improved while others worsened. "
             f"Review individual results before continuing."
         )
-    elif verdict == 'probably_beneficial':
+    elif verdict == "probably_beneficial":
         primary = (
             f"There is a {pct}% probability that '{intervention_name}' is "
             f"beneficial based on your personal data combined with prior "
             f"clinical evidence."
         )
-    elif verdict == 'possibly_beneficial':
+    elif verdict == "possibly_beneficial":
         primary = (
             f"{pct}% probability of benefit from '{intervention_name}'. "
             f"The evidence is promising but not conclusive."
         )
-    elif verdict == 'uncertain':
+    elif verdict == "uncertain":
         primary = (
             f"Uncertain whether '{intervention_name}' is helping "
             f"({pct}% probability of benefit). More data needed."
@@ -1899,7 +1932,7 @@ def analyze_intervention_bayesian(
         "Concurrent lifestyle changes may confound results.",
     ]
 
-    if overall_data_suff in ('low', 'insufficient'):
+    if overall_data_suff in ("low", "insufficient"):
         limitations.insert(0, "Limited sample size reduces reliability of conclusions.")
 
     # Add correlation adjustment note to limitations if significant
@@ -1911,14 +1944,18 @@ def analyze_intervention_bayesian(
 
     # Temporal adjustment summary
     temporal_adj_warning = None
-    applied_adjustments = [b for b, adj in temporal_adjustments.items() if adj is not None]
+    applied_adjustments = [
+        b for b, adj in temporal_adjustments.items() if adj is not None
+    ]
     unapplied = [b for b, adj in temporal_adjustments.items() if adj is None]
 
     if applied_adjustments:
         # Check for significant adjustments
         significant_rtm = []
         for bio, adj in temporal_adjustments.items():
-            if adj and abs(adj.regression_to_mean_effect) > 0.1 * abs(adj.raw_change + 0.001):
+            if adj and abs(adj.regression_to_mean_effect) > 0.1 * abs(
+                adj.raw_change + 0.001
+            ):
                 significant_rtm.append(bio)
 
         if significant_rtm:
@@ -1947,7 +1984,9 @@ def analyze_intervention_bayesian(
         )
 
     # Convert temporal_adjustments to serializable format (or None if empty)
-    temporal_adj_dict = {k: v for k, v in temporal_adjustments.items() if v is not None} or None
+    temporal_adj_dict = {
+        k: v for k, v in temporal_adjustments.items() if v is not None
+    } or None
 
     return BayesianInterventionAnalysis(
         intervention_name=intervention_name,

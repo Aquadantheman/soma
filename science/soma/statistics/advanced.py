@@ -7,23 +7,22 @@ All analyses include:
 - Clear statements of what is/isn't proven
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date
 from typing import Optional
 import pandas as pd
 import numpy as np
 from scipy import stats
-from scipy.signal import detrend
-import warnings
-
 
 # ============================================
 # DATA CLASSES
 # ============================================
 
+
 @dataclass
 class CorrelationPair:
     """A single correlation between two biomarkers."""
+
     biomarker_a: str
     biomarker_b: str
     pearson_r: float
@@ -40,6 +39,7 @@ class CorrelationPair:
 @dataclass
 class CorrelationMatrix:
     """Full correlation analysis between all biomarker pairs."""
+
     pairs: list[CorrelationPair]
     biomarkers_analyzed: list[str]
     bonferroni_alpha: float  # Corrected significance threshold
@@ -50,6 +50,7 @@ class CorrelationMatrix:
 @dataclass
 class LaggedCorrelation:
     """Correlation at a specific time lag."""
+
     lag_days: int
     correlation: float
     p_value: float
@@ -62,8 +63,9 @@ class LaggedCorrelation:
 @dataclass
 class RecoveryModel:
     """Model of how activity affects next-day recovery metrics."""
+
     predictor: str  # e.g., "steps"
-    outcome: str    # e.g., "hrv_sdnn"
+    outcome: str  # e.g., "hrv_sdnn"
     lagged_correlations: list[LaggedCorrelation]  # lag 0, 1, 2, 3 days
     optimal_lag: int  # Which lag has strongest correlation
     optimal_correlation: float
@@ -78,6 +80,7 @@ class RecoveryModel:
 @dataclass
 class SeasonalComponent:
     """Decomposed seasonal pattern."""
+
     month: int
     month_name: str
     mean_value: float
@@ -90,6 +93,7 @@ class SeasonalComponent:
 @dataclass
 class SeasonalAnalysis:
     """Full seasonal decomposition for a biomarker."""
+
     biomarker_slug: str
     annual_mean: float
     seasonal_components: list[SeasonalComponent]
@@ -105,6 +109,7 @@ class SeasonalAnalysis:
 @dataclass
 class ReadinessScore:
     """Composite readiness/recovery score for a specific day."""
+
     date: date
     score: float  # 0-100 scale
     hrv_z_score: Optional[float]
@@ -116,6 +121,7 @@ class ReadinessScore:
 @dataclass
 class ReadinessModel:
     """Model for computing daily readiness scores."""
+
     hrv_baseline_mean: float
     hrv_baseline_std: float
     rhr_baseline_mean: float
@@ -128,6 +134,7 @@ class ReadinessModel:
 # ============================================
 # CROSS-CORRELATION ANALYSIS
 # ============================================
+
 
 def _pearson_ci(r: float, n: int, confidence: float = 0.95) -> tuple[float, float]:
     """Calculate confidence interval for Pearson r using Fisher z-transformation."""
@@ -162,7 +169,9 @@ def _effect_size_label(r: float) -> str:
         return "negligible"
 
 
-def analyze_correlations(df: pd.DataFrame, min_observations: int = 30) -> Optional[CorrelationMatrix]:
+def analyze_correlations(
+    df: pd.DataFrame, min_observations: int = 30
+) -> Optional[CorrelationMatrix]:
     """
     Compute correlation matrix between all biomarker pairs.
 
@@ -176,7 +185,9 @@ def analyze_correlations(df: pd.DataFrame, min_observations: int = 30) -> Option
     daily = df.groupby(["date", "biomarker_slug"])["value"].mean().unstack()
 
     # Need at least 2 biomarkers with sufficient overlap
-    biomarkers = [col for col in daily.columns if daily[col].notna().sum() >= min_observations]
+    biomarkers = [
+        col for col in daily.columns if daily[col].notna().sum() >= min_observations
+    ]
     if len(biomarkers) < 2:
         return None
 
@@ -185,7 +196,7 @@ def analyze_correlations(df: pd.DataFrame, min_observations: int = 30) -> Option
     bonferroni_alpha = 0.05 / n_comparisons
 
     for i, bio_a in enumerate(biomarkers):
-        for bio_b in biomarkers[i+1:]:
+        for bio_b in biomarkers[i + 1 :]:
             # Get overlapping observations
             mask = daily[bio_a].notna() & daily[bio_b].notna()
             x = daily.loc[mask, bio_a].values
@@ -207,19 +218,21 @@ def analyze_correlations(df: pd.DataFrame, min_observations: int = 30) -> Option
             # Significance after Bonferroni correction
             is_significant = pearson_p < bonferroni_alpha
 
-            pairs.append(CorrelationPair(
-                biomarker_a=bio_a,
-                biomarker_b=bio_b,
-                pearson_r=float(pearson_r),
-                pearson_p=float(pearson_p),
-                spearman_rho=float(spearman_rho),
-                spearman_p=float(spearman_p),
-                n_observations=n,
-                ci_lower=ci_lower,
-                ci_upper=ci_upper,
-                is_significant=is_significant,
-                effect_size=_effect_size_label(pearson_r)
-            ))
+            pairs.append(
+                CorrelationPair(
+                    biomarker_a=bio_a,
+                    biomarker_b=bio_b,
+                    pearson_r=float(pearson_r),
+                    pearson_p=float(pearson_p),
+                    spearman_rho=float(spearman_rho),
+                    spearman_p=float(spearman_p),
+                    n_observations=n,
+                    ci_lower=ci_lower,
+                    ci_upper=ci_upper,
+                    is_significant=is_significant,
+                    effect_size=_effect_size_label(pearson_r),
+                )
+            )
 
     if not pairs:
         return None
@@ -231,7 +244,7 @@ def analyze_correlations(df: pd.DataFrame, min_observations: int = 30) -> Option
         biomarkers_analyzed=biomarkers,
         bonferroni_alpha=bonferroni_alpha,
         significant_pairs=significant_pairs,
-        method_note=f"Bonferroni-corrected alpha = {bonferroni_alpha:.4f} for {n_comparisons} comparisons"
+        method_note=f"Bonferroni-corrected alpha = {bonferroni_alpha:.4f} for {n_comparisons} comparisons",
     )
 
 
@@ -239,12 +252,13 @@ def analyze_correlations(df: pd.DataFrame, min_observations: int = 30) -> Option
 # RECOVERY MODEL (LAGGED CORRELATIONS)
 # ============================================
 
+
 def analyze_recovery(
     df: pd.DataFrame,
     predictor: str = "steps",
     outcome: str = "hrv_sdnn",
     max_lag: int = 3,
-    min_observations: int = 30
+    min_observations: int = 30,
 ) -> Optional[RecoveryModel]:
     """
     Analyze how a predictor (e.g., activity) affects an outcome (e.g., HRV)
@@ -290,15 +304,17 @@ def analyze_recovery(
         r, p = stats.pearsonr(x_clean, y_clean)
         ci_lower, ci_upper = _pearson_ci(r, n)
 
-        lagged_correlations.append(LaggedCorrelation(
-            lag_days=lag,
-            correlation=float(r),
-            p_value=float(p),
-            ci_lower=ci_lower,
-            ci_upper=ci_upper,
-            n_observations=n,
-            is_significant=p < 0.05
-        ))
+        lagged_correlations.append(
+            LaggedCorrelation(
+                lag_days=lag,
+                correlation=float(r),
+                p_value=float(p),
+                ci_lower=ci_lower,
+                ci_upper=ci_upper,
+                n_observations=n,
+                is_significant=p < 0.05,
+            )
+        )
 
     if not lagged_correlations:
         return None
@@ -311,8 +327,8 @@ def analyze_recovery(
         x = daily[predictor]
         y = daily[outcome]
     else:
-        x = daily[predictor].iloc[:-best.lag_days]
-        y = daily[outcome].shift(-best.lag_days).iloc[:-best.lag_days]
+        x = daily[predictor].iloc[: -best.lag_days]
+        y = daily[outcome].shift(-best.lag_days).iloc[: -best.lag_days]
 
     mask = x.notna() & y.notna()
     x_clean = x[mask].values
@@ -322,7 +338,9 @@ def analyze_recovery(
 
     # Interpretation
     if not best.is_significant:
-        interpretation = f"No significant relationship found between {predictor} and {outcome}"
+        interpretation = (
+            f"No significant relationship found between {predictor} and {outcome}"
+        )
     elif best.correlation > 0:
         interpretation = f"Higher {predictor} is associated with higher {outcome} {best.lag_days} day(s) later (r={best.correlation:.3f})"
     else:
@@ -339,7 +357,7 @@ def analyze_recovery(
         is_significant=best.is_significant,
         regression_slope=float(slope),
         regression_intercept=float(intercept),
-        r_squared=float(r_value ** 2)
+        r_squared=float(r_value**2),
     )
 
 
@@ -347,11 +365,9 @@ def analyze_recovery(
 # SEASONAL DECOMPOSITION
 # ============================================
 
+
 def analyze_seasonality(
-    df: pd.DataFrame,
-    biomarker_slug: str,
-    min_months: int = 6,
-    min_per_month: int = 10
+    df: pd.DataFrame, biomarker_slug: str, min_months: int = 6, min_per_month: int = 10
 ) -> Optional[SeasonalAnalysis]:
     """
     Decompose biomarker data into seasonal patterns.
@@ -381,8 +397,20 @@ def analyze_seasonality(
     data = data[data["month"].isin(valid_months)]
     annual_mean = float(data["value"].mean())
 
-    month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    month_names = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+    ]
 
     seasonal_components = []
     groups = []
@@ -394,15 +422,17 @@ def analyze_seasonality(
             se = float(stats.sem(month_data))
             ci = se * stats.t.ppf(0.975, len(month_data) - 1)
 
-            seasonal_components.append(SeasonalComponent(
-                month=month,
-                month_name=month_names[month - 1],
-                mean_value=mean,
-                ci_lower=mean - ci,
-                ci_upper=mean + ci,
-                n_observations=len(month_data),
-                deviation_from_annual=mean - annual_mean
-            ))
+            seasonal_components.append(
+                SeasonalComponent(
+                    month=month,
+                    month_name=month_names[month - 1],
+                    mean_value=mean,
+                    ci_lower=mean - ci,
+                    ci_upper=mean + ci,
+                    n_observations=len(month_data),
+                    deviation_from_annual=mean - annual_mean,
+                )
+            )
             groups.append(month_data)
 
     if len(groups) < 3:
@@ -432,7 +462,7 @@ def analyze_seasonality(
         seasonality_strength=float(seasonality_strength),
         f_statistic=float(f_stat),
         p_value=float(p_value),
-        is_significant=p_value < 0.05
+        is_significant=p_value < 0.05,
     )
 
 
@@ -440,11 +470,12 @@ def analyze_seasonality(
 # READINESS SCORE
 # ============================================
 
+
 def build_readiness_model(
     df: pd.DataFrame,
     hrv_slug: str = "hrv_sdnn",
     rhr_slug: str = "heart_rate_resting",
-    min_days: int = 30
+    min_days: int = 30,
 ) -> Optional[ReadinessModel]:
     """
     Build a model for computing daily readiness scores.
@@ -496,7 +527,7 @@ def build_readiness_model(
         "p25": float(np.percentile(raw_scores, 25)),
         "p50": float(np.percentile(raw_scores, 50)),
         "p75": float(np.percentile(raw_scores, 75)),
-        "p95": float(np.percentile(raw_scores, 95))
+        "p95": float(np.percentile(raw_scores, 95)),
     }
 
     return ReadinessModel(
@@ -506,7 +537,7 @@ def build_readiness_model(
         rhr_baseline_std=rhr_std,
         weights={"hrv": 0.6, "rhr": -0.4},
         score_distribution=percentiles,
-        method_note="Score = 0.6 * HRV_z - 0.4 * RHR_z, normalized to 0-100 scale"
+        method_note="Score = 0.6 * HRV_z - 0.4 * RHR_z, normalized to 0-100 scale",
     )
 
 
@@ -514,7 +545,7 @@ def compute_readiness_scores(
     df: pd.DataFrame,
     model: ReadinessModel,
     hrv_slug: str = "hrv_sdnn",
-    rhr_slug: str = "heart_rate_resting"
+    rhr_slug: str = "heart_rate_resting",
 ) -> list[ReadinessScore]:
     """
     Compute daily readiness scores using a pre-built model.
@@ -543,7 +574,9 @@ def compute_readiness_scores(
         raw_score = 0.6 * hrv_z - 0.4 * rhr_z
 
         # Normalize to 0-100
-        normalized = 50 + 50 * (raw_score - model.score_distribution["p50"]) / (p95 - p5 + 1e-6)
+        normalized = 50 + 50 * (raw_score - model.score_distribution["p50"]) / (
+            p95 - p5 + 1e-6
+        )
         normalized = max(0, min(100, normalized))
 
         # Interpretation
@@ -558,14 +591,19 @@ def compute_readiness_scores(
         else:
             interpretation = "poor"
 
-        scores.append(ReadinessScore(
-            date=date_val,
-            score=float(normalized),
-            hrv_z_score=float(hrv_z),
-            rhr_z_score=float(rhr_z),
-            components={"hrv_contribution": 0.6 * hrv_z, "rhr_contribution": -0.4 * rhr_z},
-            interpretation=interpretation
-        ))
+        scores.append(
+            ReadinessScore(
+                date=date_val,
+                score=float(normalized),
+                hrv_z_score=float(hrv_z),
+                rhr_z_score=float(rhr_z),
+                components={
+                    "hrv_contribution": 0.6 * hrv_z,
+                    "rhr_contribution": -0.4 * rhr_z,
+                },
+                interpretation=interpretation,
+            )
+        )
 
     return sorted(scores, key=lambda x: x.date, reverse=True)
 
@@ -595,7 +633,9 @@ def get_readiness_summary(scores: list[ReadinessScore]) -> dict:
     # Distribution of interpretations
     interpretation_counts = {}
     for s in scores:
-        interpretation_counts[s.interpretation] = interpretation_counts.get(s.interpretation, 0) + 1
+        interpretation_counts[s.interpretation] = (
+            interpretation_counts.get(s.interpretation, 0) + 1
+        )
 
     return {
         "total_days": len(scores),
@@ -607,5 +647,5 @@ def get_readiness_summary(scores: list[ReadinessScore]) -> dict:
         "trend_p_value": float(trend_p) if trend_p else None,
         "interpretation_distribution": interpretation_counts,
         "best_day": max(scores, key=lambda x: x.score),
-        "worst_day": min(scores, key=lambda x: x.score)
+        "worst_day": min(scores, key=lambda x: x.score),
     }

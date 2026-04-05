@@ -1,9 +1,7 @@
 """Unit tests for advanced statistical analysis functions."""
 
-import pytest
-import pandas as pd
 import numpy as np
-from datetime import datetime
+import pandas as pd
 
 from soma.statistics.advanced import (
     analyze_correlations,
@@ -70,7 +68,9 @@ class TestRecoveryAnalysis:
 
     def test_analyzes_lagged_correlations(self, combined_signals_df):
         """Should analyze correlations at different time lags."""
-        result = analyze_recovery(combined_signals_df, predictor="steps", outcome="hrv_sdnn")
+        result = analyze_recovery(
+            combined_signals_df, predictor="steps", outcome="hrv_sdnn"
+        )
 
         assert result is not None
         assert len(result.lagged_correlations) >= 1
@@ -79,7 +79,9 @@ class TestRecoveryAnalysis:
 
     def test_lagged_correlations_have_stats(self, combined_signals_df):
         """Each lag should have proper statistics."""
-        result = analyze_recovery(combined_signals_df, predictor="steps", outcome="hrv_sdnn")
+        result = analyze_recovery(
+            combined_signals_df, predictor="steps", outcome="hrv_sdnn"
+        )
 
         assert result is not None
         for lag in result.lagged_correlations:
@@ -109,11 +111,9 @@ class TestSeasonalityAnalysis:
         noise = np.random.normal(0, 2, len(dates))
         values = base + seasonal + noise
 
-        df = pd.DataFrame({
-            "time": dates,
-            "biomarker_slug": "heart_rate",
-            "value": values
-        })
+        df = pd.DataFrame(
+            {"time": dates, "biomarker_slug": "heart_rate", "value": values}
+        )
 
         result = analyze_seasonality(df, "heart_rate")
 
@@ -154,6 +154,12 @@ class TestReadinessModel:
         assert len(scores) > 0
         for score in scores:
             assert 0 <= score.score <= 100
-            assert score.interpretation in ["optimal", "good", "moderate", "low", "poor"]
+            assert score.interpretation in [
+                "optimal",
+                "good",
+                "moderate",
+                "low",
+                "poor",
+            ]
             assert score.hrv_z_score is not None
             assert score.rhr_z_score is not None

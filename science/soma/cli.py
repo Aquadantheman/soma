@@ -12,25 +12,21 @@ Usage:
 
 import sys
 from datetime import datetime, timedelta
-from typing import Optional
 
 import pandas as pd
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
-from rich.layout import Layout
-from rich.text import Text
 from rich import box
 from sqlalchemy import create_engine, text
 import os
 
-from .baseline.model import compute_baseline, compute_deviation, BiomarkerBaseline
+from .baseline.model import compute_deviation, BiomarkerBaseline
 
 console = Console()
 
 DATABASE_URL = os.environ.get(
-    "SOMA_DATABASE_URL",
-    "postgresql://postgres:soma_dev@127.0.0.1:5432/soma"
+    "SOMA_DATABASE_URL", "postgresql://postgres:soma_dev@127.0.0.1:5432/soma"
 )
 
 
@@ -76,17 +72,21 @@ def cmd_status():
 
     # Header panel
     if range_result and range_result[0]:
-        date_info = f"Data from {range_result[0]:%Y-%m-%d} to {range_result[1]:%Y-%m-%d}"
+        date_info = (
+            f"Data from {range_result[0]:%Y-%m-%d} to {range_result[1]:%Y-%m-%d}"
+        )
     else:
         date_info = "No data yet"
 
-    console.print(Panel(
-        f"[bold cyan]Soma[/] - Personal Biosignal Baseline\n\n"
-        f"[dim]{date_info}[/]\n"
-        f"Total signals: [bold]{total:,}[/]",
-        title="Status",
-        border_style="cyan",
-    ))
+    console.print(
+        Panel(
+            f"[bold cyan]Soma[/] - Personal Biosignal Baseline\n\n"
+            f"[dim]{date_info}[/]\n"
+            f"Total signals: [bold]{total:,}[/]",
+            title="Status",
+            border_style="cyan",
+        )
+    )
 
     # Coverage table
     if coverage:
@@ -123,7 +123,9 @@ def cmd_status():
 
         console.print(table)
     else:
-        console.print("\n[dim]No baselines computed yet. Run: POST /baselines/compute[/]")
+        console.print(
+            "\n[dim]No baselines computed yet. Run: POST /baselines/compute[/]"
+        )
 
 
 def cmd_baselines():
@@ -169,11 +171,13 @@ def cmd_baselines():
             f"[dim]Based on {n} samples over {window} days (computed {computed:%Y-%m-%d})[/]"
         )
 
-        console.print(Panel(
-            panel_content,
-            title=f"[cyan]{name}[/] ({slug})",
-            border_style="blue",
-        ))
+        console.print(
+            Panel(
+                panel_content,
+                title=f"[cyan]{name}[/] ({slug})",
+                border_style="blue",
+            )
+        )
         console.print()
 
 
@@ -186,23 +190,28 @@ def cmd_signals(biomarker_slug: str, days: int = 7):
         # Get biomarker info
         bio = conn.execute(
             text("SELECT name, unit FROM biomarker_types WHERE slug = :slug"),
-            {"slug": biomarker_slug}
+            {"slug": biomarker_slug},
         ).first()
 
         if not bio:
             console.print(f"[red]Unknown biomarker: {biomarker_slug}[/]")
             return
 
-        signals = conn.execute(text("""
+        signals = conn.execute(
+            text("""
             SELECT time, value, source_slug, quality
             FROM signals
             WHERE biomarker_slug = :slug AND time >= :cutoff
             ORDER BY time DESC
             LIMIT 50
-        """), {"slug": biomarker_slug, "cutoff": cutoff}).fetchall()
+        """),
+            {"slug": biomarker_slug, "cutoff": cutoff},
+        ).fetchall()
 
     if not signals:
-        console.print(f"[yellow]No signals found for {biomarker_slug} in last {days} days[/]")
+        console.print(
+            f"[yellow]No signals found for {biomarker_slug} in last {days} days[/]"
+        )
         return
 
     table = Table(title=f"{bio[0]} - Last {days} Days", box=box.ROUNDED)
@@ -228,7 +237,8 @@ def cmd_check(biomarker_slug: str, value: float):
 
     with engine.connect() as conn:
         # Get baseline
-        baseline_row = conn.execute(text("""
+        baseline_row = conn.execute(
+            text("""
             SELECT
                 b.biomarker_slug, b.mean, b.std_dev as std,
                 b.p10, b.p25, b.p50 as median, b.p75, b.p90,
@@ -239,7 +249,9 @@ def cmd_check(biomarker_slug: str, value: float):
             WHERE b.biomarker_slug = :slug
             ORDER BY computed_at DESC
             LIMIT 1
-        """), {"slug": biomarker_slug}).first()
+        """),
+            {"slug": biomarker_slug},
+        ).first()
 
     if not baseline_row:
         console.print(f"[red]No baseline found for {biomarker_slug}[/]")
@@ -260,7 +272,9 @@ def cmd_check(biomarker_slug: str, value: float):
         p90=baseline_row[7],
         sample_count=baseline_row[8],
         is_stable=True,
-        coefficient_of_variation=baseline_row[2] / baseline_row[1] if baseline_row[1] else 0,
+        coefficient_of_variation=(
+            baseline_row[2] / baseline_row[1] if baseline_row[1] else 0
+        ),
     )
 
     deviation = compute_deviation(value, baseline)
@@ -284,18 +298,24 @@ def cmd_check(biomarker_slug: str, value: float):
     else:
         arrow = "[dim]-[/]"
 
-    console.print(Panel(
-        f"[bold]{baseline_row[11]}[/] ({biomarker_slug})\n\n"
-        f"Observed: [bold cyan]{value:.2f}[/] {baseline_row[12]} {arrow}\n"
-        f"Baseline: {baseline.mean:.2f} ± {baseline.std:.2f}\n\n"
-        f"[{color}]{level}[/] deviation\n"
-        f"  Z-score: [{color}]{deviation.z_score:+.2f}[/]\n"
-        f"  Percentile: {deviation.percentile:.0f}%\n"
-        f"  Change: {deviation.deviation_pct:+.1f}% from baseline\n"
-        + (f"\n[dim italic]{deviation.clinical_note}[/]" if deviation.clinical_note else ""),
-        title="Deviation Check",
-        border_style=color,
-    ))
+    console.print(
+        Panel(
+            f"[bold]{baseline_row[11]}[/] ({biomarker_slug})\n\n"
+            f"Observed: [bold cyan]{value:.2f}[/] {baseline_row[12]} {arrow}\n"
+            f"Baseline: {baseline.mean:.2f} ± {baseline.std:.2f}\n\n"
+            f"[{color}]{level}[/] deviation\n"
+            f"  Z-score: [{color}]{deviation.z_score:+.2f}[/]\n"
+            f"  Percentile: {deviation.percentile:.0f}%\n"
+            f"  Change: {deviation.deviation_pct:+.1f}% from baseline\n"
+            + (
+                f"\n[dim italic]{deviation.clinical_note}[/]"
+                if deviation.clinical_note
+                else ""
+            ),
+            title="Deviation Check",
+            border_style=color,
+        )
+    )
 
 
 def main():
@@ -303,10 +323,16 @@ def main():
     if len(sys.argv) < 2:
         console.print("[bold cyan]Soma CLI[/] - Personal Biosignal Dashboard\n")
         console.print("Commands:")
-        console.print("  [cyan]status[/]                    Show system status and coverage")
-        console.print("  [cyan]baselines[/]                 Show all computed baselines")
+        console.print(
+            "  [cyan]status[/]                    Show system status and coverage"
+        )
+        console.print(
+            "  [cyan]baselines[/]                 Show all computed baselines"
+        )
         console.print("  [cyan]signals[/] <biomarker> [days]  Show recent signals")
-        console.print("  [cyan]check[/] <biomarker> <value>   Check value against baseline")
+        console.print(
+            "  [cyan]check[/] <biomarker> <value>   Check value against baseline"
+        )
         console.print("\nExamples:")
         console.print("  python -m soma.cli status")
         console.print("  python -m soma.cli signals hrv_rmssd 14")

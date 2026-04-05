@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 from scipy import stats
 
@@ -30,6 +30,7 @@ from scipy import stats
 @dataclass
 class BiomarkerBaseline:
     """Personal baseline for a single biomarker."""
+
     biomarker_slug: str
     computed_at: pd.Timestamp
     window_days: int
@@ -45,7 +46,7 @@ class BiomarkerBaseline:
 
     # Stability
     sample_count: int
-    is_stable: bool          # True if baseline has converged
+    is_stable: bool  # True if baseline has converged
     coefficient_of_variation: float  # std/mean — lower = more stable
 
     # Trend
@@ -56,18 +57,19 @@ class BiomarkerBaseline:
 @dataclass
 class DeviationResult:
     """How much a current observation deviates from personal baseline."""
+
     biomarker_slug: str
     observed_value: float
     baseline_mean: float
     baseline_std: float
 
-    z_score: float              # standard deviations from personal mean
-    percentile: float           # where this falls in personal distribution
-    deviation_pct: float        # percent change from personal mean
+    z_score: float  # standard deviations from personal mean
+    percentile: float  # where this falls in personal distribution
+    deviation_pct: float  # percent change from personal mean
 
-    is_notable: bool            # |z_score| > 1.5
-    is_significant: bool        # |z_score| > 2.0
-    direction: str              # 'above', 'below', 'within'
+    is_notable: bool  # |z_score| > 1.5
+    is_significant: bool  # |z_score| > 2.0
+    direction: str  # 'above', 'below', 'within'
 
     clinical_note: Optional[str] = None
 
@@ -137,8 +139,7 @@ def compute_baseline(
     n_days = (
         signals_df[signals_df["biomarker_slug"] == biomarker_slug]["time"]
         .pipe(pd.to_datetime)
-        .dt.date
-        .nunique()
+        .dt.date.nunique()
     )
 
     if n_days < MIN_BASELINE_DAYS or len(subset) < 20:
@@ -182,10 +183,15 @@ def compute_deviation(
     """
     Compute how much an observation deviates from personal baseline.
     """
-    z_score = (observed_value - baseline.mean) / baseline.std if baseline.std > 0 else 0.0
+    z_score = (
+        (observed_value - baseline.mean) / baseline.std if baseline.std > 0 else 0.0
+    )
     percentile = float(stats.norm.cdf(z_score) * 100)
-    deviation_pct = ((observed_value - baseline.mean) / baseline.mean * 100
-                     if baseline.mean != 0 else 0.0)
+    deviation_pct = (
+        (observed_value - baseline.mean) / baseline.mean * 100
+        if baseline.mean != 0
+        else 0.0
+    )
 
     direction = "within"
     if z_score > NOTABLE_Z_THRESHOLD:

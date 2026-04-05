@@ -25,8 +25,10 @@ router = APIRouter(prefix="/jobs", tags=["jobs"])
 # SCHEMAS
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class JobResponse(BaseModel):
     """Response for job submission."""
+
     job_id: str
     status: str
     message: str
@@ -34,6 +36,7 @@ class JobResponse(BaseModel):
 
 class JobStatusResponse(BaseModel):
     """Response for job status query."""
+
     job_id: str
     status: str
     result: Optional[dict] = None
@@ -46,6 +49,7 @@ class JobStatusResponse(BaseModel):
 
 class QueueStatsResponse(BaseModel):
     """Response for queue statistics."""
+
     queues: dict
     total_jobs: int
     workers: int
@@ -53,17 +57,20 @@ class QueueStatsResponse(BaseModel):
 
 class RecomputeBaselineRequest(BaseModel):
     """Request to recompute baselines."""
+
     biomarker_slugs: Optional[List[str]] = None
 
 
 class InvalidateCacheRequest(BaseModel):
     """Request to invalidate caches."""
+
     patterns: Optional[List[str]] = None
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ENDPOINTS
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 @router.get("/{job_id}", response_model=JobStatusResponse)
 def get_job(
@@ -74,10 +81,7 @@ def get_job(
     info = get_job_status(job_id)
 
     if info.status == JobStatus.UNAVAILABLE:
-        raise HTTPException(
-            status_code=503,
-            detail="Job queue is unavailable"
-        )
+        raise HTTPException(status_code=503, detail="Job queue is unavailable")
 
     return JobStatusResponse(
         job_id=info.job_id,
@@ -100,19 +104,18 @@ def get_queue_stats(
         from rq import Worker
         from ..jobs.queue import get_connection
     except ImportError:
-        raise HTTPException(
-            status_code=503,
-            detail="Job queue (rq) is not installed"
-        )
+        raise HTTPException(status_code=503, detail="Job queue (rq) is not installed")
 
     conn = get_connection()
     if conn is None:
-        raise HTTPException(
-            status_code=503,
-            detail="Job queue is unavailable"
-        )
+        raise HTTPException(status_code=503, detail="Job queue is unavailable")
 
-    queue_names = [QueueName.HIGH, QueueName.DEFAULT, QueueName.LOW, QueueName.SCHEDULED]
+    queue_names = [
+        QueueName.HIGH,
+        QueueName.DEFAULT,
+        QueueName.LOW,
+        QueueName.SCHEDULED,
+    ]
     queues_info = {}
     total = 0
 
@@ -129,11 +132,7 @@ def get_queue_stats(
 
     workers = Worker.count(connection=conn)
 
-    return QueueStatsResponse(
-        queues=queues_info,
-        total_jobs=total,
-        workers=workers
-    )
+    return QueueStatsResponse(queues=queues_info, total_jobs=total, workers=workers)
 
 
 @router.post("/recompute-baselines", response_model=JobResponse)
@@ -150,43 +149,35 @@ def trigger_baseline_recomputation(
         # Queue individual jobs for each biomarker
         job_ids = []
         for slug in request.biomarker_slugs:
-            job_id = enqueue_job(
-                recompute_baseline,
-                slug,
-                queue_name=QueueName.DEFAULT
-            )
+            job_id = enqueue_job(recompute_baseline, slug, queue_name=QueueName.DEFAULT)
             if job_id:
                 job_ids.append(job_id)
 
         if not job_ids:
             raise HTTPException(
-                status_code=503,
-                detail="Failed to enqueue jobs - queue unavailable"
+                status_code=503, detail="Failed to enqueue jobs - queue unavailable"
             )
 
         return JobResponse(
             job_id=job_ids[0],  # Return first job ID
             status="queued",
-            message=f"Queued {len(job_ids)} baseline recomputation jobs"
+            message=f"Queued {len(job_ids)} baseline recomputation jobs",
         )
     else:
         # Queue single job to recompute all
         job_id = enqueue_job(
             recompute_all_baselines,
             queue_name=QueueName.LOW,
-            job_timeout=3600  # 1 hour for full recomputation
+            job_timeout=3600,  # 1 hour for full recomputation
         )
 
         if not job_id:
             raise HTTPException(
-                status_code=503,
-                detail="Failed to enqueue job - queue unavailable"
+                status_code=503, detail="Failed to enqueue job - queue unavailable"
             )
 
         return JobResponse(
-            job_id=job_id,
-            status="queued",
-            message="Queued full baseline recomputation"
+            job_id=job_id, status="queued", message="Queued full baseline recomputation"
         )
 
 
@@ -196,20 +187,13 @@ def trigger_cache_invalidation(
     auth: AuthContext = Depends(require_auth),
 ):
     """Trigger cache invalidation as a background job."""
-    job_id = enqueue_job(
-        invalidate_caches,
-        request.patterns,
-        queue_name=QueueName.HIGH
-    )
+    job_id = enqueue_job(invalidate_caches, request.patterns, queue_name=QueueName.HIGH)
 
     if not job_id:
         raise HTTPException(
-            status_code=503,
-            detail="Failed to enqueue job - queue unavailable"
+            status_code=503, detail="Failed to enqueue job - queue unavailable"
         )
 
     return JobResponse(
-        job_id=job_id,
-        status="queued",
-        message="Queued cache invalidation"
+        job_id=job_id, status="queued", message="Queued cache invalidation"
     )

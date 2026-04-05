@@ -10,6 +10,7 @@ from scipy import stats
 @dataclass
 class ConvergencePoint:
     """Estimate at a specific sample size."""
+
     n: int
     mean: float
     ci_width: float
@@ -20,6 +21,7 @@ class ConvergencePoint:
 @dataclass
 class ConvergenceAnalysis:
     """How estimates stabilize with increasing sample size."""
+
     biomarker_slug: str
     current_n: int
     current_mean: float
@@ -33,6 +35,7 @@ class ConvergenceAnalysis:
 @dataclass
 class TemporalStability:
     """Stability of a metric across different time periods."""
+
     biomarker_slug: str
     metric: str  # e.g., "mean", "correlation"
     periods: list[dict]  # year/period -> value
@@ -45,6 +48,7 @@ class TemporalStability:
 @dataclass
 class DriftResult:
     """Comparison of recent vs historical data."""
+
     biomarker_slug: str
     recent_mean: float
     recent_n: int
@@ -61,6 +65,7 @@ class DriftResult:
 @dataclass
 class SampleAdequacy:
     """Whether you have enough data for reliable inference."""
+
     biomarker_slug: str
     current_n: int
     required_n_5pct: int  # For 5% precision
@@ -72,6 +77,7 @@ class SampleAdequacy:
 @dataclass
 class StabilityReport:
     """Complete stability assessment."""
+
     convergence: list[ConvergenceAnalysis]
     temporal_stability: list[TemporalStability]
     drift: list[DriftResult]
@@ -83,16 +89,14 @@ class StabilityReport:
 def _compute_ci_width(values: np.ndarray, confidence: float = 0.95) -> float:
     """Compute confidence interval width."""
     if len(values) < 2:
-        return float('inf')
+        return float("inf")
     se = stats.sem(values)
     ci = 2 * se * stats.t.ppf((1 + confidence) / 2, len(values) - 1)
     return float(ci)
 
 
 def analyze_convergence(
-    df: pd.DataFrame,
-    biomarker_slug: str,
-    checkpoints: list[int] = None
+    df: pd.DataFrame, biomarker_slug: str, checkpoints: list[int] = None
 ) -> Optional[ConvergenceAnalysis]:
     """
     Analyze how estimates converge with increasing sample size.
@@ -122,7 +126,7 @@ def analyze_convergence(
         sample = shuffled[:n]
         mean = float(np.mean(sample))
         ci_width = _compute_ci_width(sample)
-        ci_pct = (ci_width / mean * 100) if mean != 0 else float('inf')
+        ci_pct = (ci_width / mean * 100) if mean != 0 else float("inf")
 
         if ci_pct < 2:
             status = "stable"
@@ -133,18 +137,18 @@ def analyze_convergence(
         else:
             status = "unstable"
 
-        points.append(ConvergencePoint(
-            n=n,
-            mean=mean,
-            ci_width=ci_width,
-            ci_pct=ci_pct,
-            status=status
-        ))
+        points.append(
+            ConvergencePoint(
+                n=n, mean=mean, ci_width=ci_width, ci_pct=ci_pct, status=status
+            )
+        )
 
     current_mean = float(np.mean(values))
     current_ci = _compute_ci_width(values)
 
-    drift = abs(points[-1].mean - points[0].mean) / points[-1].mean * 100 if points else 0
+    drift = (
+        abs(points[-1].mean - points[0].mean) / points[-1].mean * 100 if points else 0
+    )
 
     return ConvergenceAnalysis(
         biomarker_slug=biomarker_slug,
@@ -154,14 +158,12 @@ def analyze_convergence(
         convergence_points=points,
         min_n_for_stability=min_n_stable,
         is_stable=current_ci / current_mean * 100 < 2 if current_mean != 0 else False,
-        drift_from_initial=drift
+        drift_from_initial=drift,
     )
 
 
 def analyze_temporal_stability(
-    df: pd.DataFrame,
-    biomarker_slug: str,
-    min_per_period: int = 30
+    df: pd.DataFrame, biomarker_slug: str, min_per_period: int = 30
 ) -> Optional[TemporalStability]:
     """
     Analyze if a biomarker's mean is stable across years.
@@ -176,12 +178,14 @@ def analyze_temporal_stability(
     for year in sorted(data["year"].unique()):
         year_vals = data[data["year"] == year]["value"].dropna()
         if len(year_vals) >= min_per_period:
-            periods.append({
-                "period": int(year),
-                "mean": float(year_vals.mean()),
-                "std": float(year_vals.std()),
-                "n": len(year_vals)
-            })
+            periods.append(
+                {
+                    "period": int(year),
+                    "mean": float(year_vals.mean()),
+                    "std": float(year_vals.std()),
+                    "n": len(year_vals),
+                }
+            )
 
     if len(periods) < 2:
         return None
@@ -201,14 +205,12 @@ def analyze_temporal_stability(
         mean_value=float(overall_mean),
         std_across_periods=float(std_across),
         is_stable=std_across / overall_mean < 0.1 if overall_mean != 0 else False,
-        consistency_pct=consistency_pct
+        consistency_pct=consistency_pct,
     )
 
 
 def analyze_drift(
-    df: pd.DataFrame,
-    biomarker_slug: str,
-    recent_days: int = 365
+    df: pd.DataFrame, biomarker_slug: str, recent_days: int = 365
 ) -> Optional[DriftResult]:
     """
     Compare recent data to historical data to detect drift.
@@ -251,13 +253,12 @@ def analyze_drift(
         t_statistic=float(t_stat),
         p_value=float(p_val),
         is_significant=is_sig,
-        direction=direction
+        direction=direction,
     )
 
 
 def analyze_sample_adequacy(
-    df: pd.DataFrame,
-    biomarker_slug: str
+    df: pd.DataFrame, biomarker_slug: str
 ) -> Optional[SampleAdequacy]:
     """
     Determine if sample size is adequate for reliable inference.
@@ -291,7 +292,7 @@ def analyze_sample_adequacy(
         required_n_5pct=req_5pct,
         required_n_2pct=req_2pct,
         is_adequate=len(values) >= req_5pct,
-        adequacy_ratio=len(values) / req_5pct if req_5pct > 0 else float('inf')
+        adequacy_ratio=len(values) / req_5pct if req_5pct > 0 else float("inf"),
     )
 
 
@@ -348,7 +349,11 @@ def generate_stability_report(df: pd.DataFrame) -> StabilityReport:
     # Overall assessment
     all_adequate = all(a.is_adequate for a in adequacy)
     any_drift = any(d.is_significant for d in drift)
-    mostly_stable = sum(1 for t in temporal if t.is_stable) / len(temporal) > 0.7 if temporal else True
+    mostly_stable = (
+        sum(1 for t in temporal if t.is_stable) / len(temporal) > 0.7
+        if temporal
+        else True
+    )
 
     if all_adequate and not any_drift and mostly_stable:
         assessment = "EXCELLENT: Data is sufficient, stable, and consistent"
@@ -365,5 +370,5 @@ def generate_stability_report(df: pd.DataFrame) -> StabilityReport:
         drift=drift,
         sample_adequacy=adequacy,
         overall_assessment=assessment,
-        recommendations=recommendations
+        recommendations=recommendations,
     )

@@ -172,7 +172,6 @@ from .holistic import (
     HolisticInsight,
     # SpO2 analysis (high reliability: CV=2.2%, stability=98.9%)
     SpO2Analysis,
-    analyze_spo2,
     # Mobility analysis (confound-controlled, 97% real signal)
     MobilityAnalysis,
     analyze_mobility,
@@ -223,7 +222,6 @@ from .interventions import (
     compute_change_confidence_interval,
     analyze_trend,
     detect_level_jump,
-    analyze_seasonality,
     # Analysis functions
     analyze_biomarker_change,
     analyze_intervention_impact,

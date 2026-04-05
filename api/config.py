@@ -57,7 +57,7 @@ class Settings(BaseSettings):
                 warnings.warn(
                     "SOMA_DATABASE_URL not set. Using development default. "
                     "DO NOT use this in production!",
-                    UserWarning
+                    UserWarning,
                 )
                 return "postgresql+psycopg2://soma:soma_dev@127.0.0.1:5432/soma"
             else:
@@ -71,7 +71,7 @@ class Settings(BaseSettings):
             warnings.warn(
                 "Database URL contains development password 'soma_dev'. "
                 "Use a strong password in production!",
-                UserWarning
+                UserWarning,
             )
 
         return v
@@ -109,6 +109,7 @@ def get_settings() -> Settings:
         issues = settings.validate_production_config()
         if issues:
             import logging
+
             logger = logging.getLogger("soma.config")
             for issue in issues:
                 logger.warning(f"Production config issue: {issue}")

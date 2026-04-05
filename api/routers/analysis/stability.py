@@ -20,7 +20,6 @@ from ...schemas import (
 from ._utils import load_signals
 from soma.statistics.stability import (
     analyze_convergence,
-    analyze_temporal_stability,
     analyze_drift,
     analyze_sample_adequacy,
     generate_stability_report,
@@ -42,13 +41,13 @@ def _convergence_to_schema(c) -> ConvergenceAnalysisSchema:
                 mean=p.mean,
                 ci_width=p.ci_width,
                 ci_pct=p.ci_pct,
-                status=p.status
+                status=p.status,
             )
             for p in c.convergence_points
         ],
         min_n_for_stability=c.min_n_for_stability,
         is_stable=c.is_stable,
-        drift_from_initial=c.drift_from_initial
+        drift_from_initial=c.drift_from_initial,
     )
 
 
@@ -61,7 +60,7 @@ def _temporal_to_schema(t) -> TemporalStabilitySchema:
         mean_value=t.mean_value,
         std_across_periods=t.std_across_periods,
         is_stable=t.is_stable,
-        consistency_pct=t.consistency_pct
+        consistency_pct=t.consistency_pct,
     )
 
 
@@ -78,7 +77,7 @@ def _drift_to_schema(d) -> DriftResultSchema:
         t_statistic=d.t_statistic,
         p_value=d.p_value,
         is_significant=d.is_significant,
-        direction=d.direction
+        direction=d.direction,
     )
 
 
@@ -90,7 +89,7 @@ def _adequacy_to_schema(s) -> SampleAdequacySchema:
         required_n_5pct=s.required_n_5pct,
         required_n_2pct=s.required_n_2pct,
         is_adequate=s.is_adequate,
-        adequacy_ratio=s.adequacy_ratio
+        adequacy_ratio=s.adequacy_ratio,
     )
 
 
@@ -119,7 +118,7 @@ def get_stability_report(
         drift=[_drift_to_schema(d) for d in result.drift],
         sample_adequacy=[_adequacy_to_schema(s) for s in result.sample_adequacy],
         overall_assessment=result.overall_assessment,
-        recommendations=result.recommendations
+        recommendations=result.recommendations,
     )
 
 
@@ -142,7 +141,7 @@ def get_convergence_analysis(
     if result is None:
         raise HTTPException(
             status_code=404,
-            detail=f"Insufficient data for convergence analysis on '{biomarker_slug}' (need 100+ samples)"
+            detail=f"Insufficient data for convergence analysis on '{biomarker_slug}' (need 100+ samples)",
         )
 
     return _convergence_to_schema(result)
@@ -171,7 +170,7 @@ def get_drift_analysis(
     if result is None:
         raise HTTPException(
             status_code=404,
-            detail=f"Insufficient data for drift analysis on '{biomarker_slug}'"
+            detail=f"Insufficient data for drift analysis on '{biomarker_slug}'",
         )
 
     return _drift_to_schema(result)
@@ -198,7 +197,7 @@ def get_sample_adequacy(
     if result is None:
         raise HTTPException(
             status_code=404,
-            detail=f"Insufficient data for adequacy analysis on '{biomarker_slug}'"
+            detail=f"Insufficient data for adequacy analysis on '{biomarker_slug}'",
         )
 
     return _adequacy_to_schema(result)

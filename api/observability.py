@@ -72,40 +72,35 @@ def get_logger(name: str = "soma"):
 REQUEST_COUNT = Counter(
     "soma_http_requests_total",
     "Total HTTP requests",
-    ["method", "endpoint", "status_code"]
+    ["method", "endpoint", "status_code"],
 )
 
 REQUEST_LATENCY = Histogram(
     "soma_http_request_duration_seconds",
     "HTTP request latency in seconds",
     ["method", "endpoint"],
-    buckets=[0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0]
+    buckets=[0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0],
 )
 
 # Analysis metrics
 ANALYSIS_COUNT = Counter(
-    "soma_analysis_requests_total",
-    "Total analysis requests by type",
-    ["analysis_type"]
+    "soma_analysis_requests_total", "Total analysis requests by type", ["analysis_type"]
 )
 
 ANALYSIS_LATENCY = Histogram(
     "soma_analysis_duration_seconds",
     "Analysis computation latency",
     ["analysis_type"],
-    buckets=[0.1, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0]
+    buckets=[0.1, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0],
 )
 
 # Data metrics
 SIGNALS_LOADED = Counter(
-    "soma_signals_loaded_total",
-    "Total signals loaded for analysis"
+    "soma_signals_loaded_total", "Total signals loaded for analysis"
 )
 
 BASELINE_COMPUTATIONS = Counter(
-    "soma_baseline_computations_total",
-    "Total baseline computations",
-    ["biomarker"]
+    "soma_baseline_computations_total", "Total baseline computations", ["biomarker"]
 )
 
 
@@ -122,6 +117,7 @@ def get_metrics_content_type() -> str:
 # ─────────────────────────────────────────────────────────────────────────────
 # REQUEST TRACING MIDDLEWARE
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class RequestTracingMiddleware(BaseHTTPMiddleware):
     """Middleware for request tracing and metrics collection."""
@@ -144,10 +140,7 @@ class RequestTracingMiddleware(BaseHTTPMiddleware):
         except Exception as e:
             status_code = 500
             logger.error(
-                "request_error",
-                method=request.method,
-                endpoint=endpoint,
-                error=str(e)
+                "request_error", method=request.method, endpoint=endpoint, error=str(e)
             )
             raise
         finally:
@@ -156,15 +149,12 @@ class RequestTracingMiddleware(BaseHTTPMiddleware):
 
             # Record metrics
             REQUEST_COUNT.labels(
-                method=request.method,
-                endpoint=endpoint,
-                status_code=status_code
+                method=request.method, endpoint=endpoint, status_code=status_code
             ).inc()
 
-            REQUEST_LATENCY.labels(
-                method=request.method,
-                endpoint=endpoint
-            ).observe(duration)
+            REQUEST_LATENCY.labels(method=request.method, endpoint=endpoint).observe(
+                duration
+            )
 
             # Log request
             logger.info(
@@ -172,7 +162,7 @@ class RequestTracingMiddleware(BaseHTTPMiddleware):
                 method=request.method,
                 endpoint=endpoint,
                 status_code=status_code,
-                duration_ms=round(duration * 1000, 2)
+                duration_ms=round(duration * 1000, 2),
             )
 
         return response
@@ -195,7 +185,12 @@ class RequestTracingMiddleware(BaseHTTPMiddleware):
             # Check for known dynamic segments
             if part in ("biomarkers", "signals", "baselines", "annotations"):
                 normalized.append(part)
-                if i + 1 < len(parts) and parts[i + 1] not in ("", "compute", "deviation", "latest"):
+                if i + 1 < len(parts) and parts[i + 1] not in (
+                    "",
+                    "compute",
+                    "deviation",
+                    "latest",
+                ):
                     skip_next = True
             elif part in ("convergence", "drift", "adequacy"):
                 normalized.append(part)
@@ -210,8 +205,10 @@ class RequestTracingMiddleware(BaseHTTPMiddleware):
 # ANALYSIS INSTRUMENTATION
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def track_analysis(analysis_type: str):
     """Decorator to track analysis execution metrics."""
+
     def decorator(func: Callable):
         async def async_wrapper(*args, **kwargs):
             ANALYSIS_COUNT.labels(analysis_type=analysis_type).inc()
@@ -232,6 +229,7 @@ def track_analysis(analysis_type: str):
                 ANALYSIS_LATENCY.labels(analysis_type=analysis_type).observe(duration)
 
         import asyncio
+
         if asyncio.iscoroutinefunction(func):
             return async_wrapper
         return sync_wrapper

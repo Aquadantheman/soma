@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 class ConfidenceIntervalSchema(BaseModel):
     """Value with confidence interval."""
+
     mean: float
     ci_lower: float
     ci_upper: float
@@ -16,6 +17,7 @@ class ConfidenceIntervalSchema(BaseModel):
 
 class DailyDaylightSchema(BaseModel):
     """Daylight metrics for a single day."""
+
     date: date
     total_min: float = Field(description="Total minutes of daylight exposure")
     morning_min: float = Field(description="Minutes before 10am")
@@ -26,6 +28,7 @@ class DailyDaylightSchema(BaseModel):
 
 class DaylightBaselineSchema(BaseModel):
     """Personal baseline for daylight exposure."""
+
     computed_at: str
     n_days: int = Field(description="Number of days in baseline")
 
@@ -48,6 +51,7 @@ class DaylightBaselineSchema(BaseModel):
 
 class DaylightDeviationSchema(BaseModel):
     """How a day's daylight deviates from personal baseline."""
+
     date: date
     total_z: float = Field(description="Z-score for total daylight")
     morning_z: float = Field(description="Z-score for morning daylight")
@@ -61,6 +65,7 @@ class DaylightDeviationSchema(BaseModel):
 
 class DaylightTrendSchema(BaseModel):
     """Trend analysis for daylight exposure."""
+
     period_days: int
     slope: float = Field(description="Change per day (minutes)")
     slope_pct: float = Field(description="Percent change over period")
@@ -73,6 +78,7 @@ class DaylightTrendSchema(BaseModel):
 
 class DaylightSleepCorrelationSchema(BaseModel):
     """Correlation between daylight and a sleep metric."""
+
     sleep_metric: str = Field(description="Which sleep metric")
     lag_days: int = Field(description="0 = same night, 1 = next night")
     correlation: float = Field(description="Pearson correlation coefficient")
@@ -84,6 +90,7 @@ class DaylightSleepCorrelationSchema(BaseModel):
 
 class DaylightReportSchema(BaseModel):
     """Complete daylight analysis report."""
+
     baseline: Optional[DaylightBaselineSchema]
     recent_days: List[DailyDaylightSchema]
     current_deviation: Optional[DaylightDeviationSchema]
@@ -100,6 +107,7 @@ class DaylightReportSchema(BaseModel):
 
 class DaylightSummary(BaseModel):
     """Quick summary of daylight exposure health."""
+
     has_sufficient_data: bool
     n_days_analyzed: int
     avg_daily_min: Optional[float]

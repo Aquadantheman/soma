@@ -33,9 +33,7 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Optional, List, Tuple
 import pandas as pd
-import numpy as np
 from scipy import stats
-
 
 # ============================================
 # VALIDATED REFERENCE DATA
@@ -43,31 +41,31 @@ from scipy import stats
 
 # BMI Categories (WHO, 2000)
 BMI_CATEGORIES = {
-    'Severely Underweight': (0, 16.0),
-    'Underweight': (16.0, 18.5),
-    'Normal': (18.5, 25.0),
-    'Overweight': (25.0, 30.0),
-    'Obese Class I': (30.0, 35.0),
-    'Obese Class II': (35.0, 40.0),
-    'Obese Class III': (40.0, 100.0),
+    "Severely Underweight": (0, 16.0),
+    "Underweight": (16.0, 18.5),
+    "Normal": (18.5, 25.0),
+    "Overweight": (25.0, 30.0),
+    "Obese Class I": (30.0, 35.0),
+    "Obese Class II": (35.0, 40.0),
+    "Obese Class III": (40.0, 100.0),
 }
 
 # Body Fat Percentage Categories (ACSM, general guidelines)
 # Format: (min%, max%)
 BODY_FAT_CATEGORIES_MALE = {
-    'Essential Fat': (2, 5),
-    'Athletes': (6, 13),
-    'Fitness': (14, 17),
-    'Average': (18, 24),
-    'Obese': (25, 100),
+    "Essential Fat": (2, 5),
+    "Athletes": (6, 13),
+    "Fitness": (14, 17),
+    "Average": (18, 24),
+    "Obese": (25, 100),
 }
 
 BODY_FAT_CATEGORIES_FEMALE = {
-    'Essential Fat': (10, 13),
-    'Athletes': (14, 20),
-    'Fitness': (21, 24),
-    'Average': (25, 31),
-    'Obese': (32, 100),
+    "Essential Fat": (10, 13),
+    "Athletes": (14, 20),
+    "Fitness": (21, 24),
+    "Average": (25, 31),
+    "Obese": (32, 100),
 }
 
 # Body Fat Percentile Tables (ACSM 11th Edition)
@@ -144,12 +142,12 @@ ACSM_BODY_FAT_PERCENTILES = {
 
 # Healthy body fat ranges by age (ACSM general guidelines)
 HEALTHY_BODY_FAT_RANGES = {
-    'male': {
+    "male": {
         (20, 39): (8, 19),
         (40, 59): (11, 21),
         (60, 79): (13, 24),
     },
-    'female': {
+    "female": {
         (20, 39): (21, 32),
         (40, 59): (23, 33),
         (60, 79): (24, 35),
@@ -161,9 +159,11 @@ HEALTHY_BODY_FAT_RANGES = {
 # DATA CLASSES
 # ============================================
 
+
 @dataclass
 class BMIResult:
     """BMI calculation and classification."""
+
     bmi: float
     category: str
     health_risk: str  # 'Low', 'Moderate', 'High', 'Very High'
@@ -173,6 +173,7 @@ class BMIResult:
 @dataclass
 class BodyFatPercentile:
     """Body fat percentage with percentile ranking."""
+
     body_fat_pct: float
     percentile: int
     category: str  # 'Essential', 'Athletes', 'Fitness', 'Average', 'Obese'
@@ -185,6 +186,7 @@ class BodyFatPercentile:
 @dataclass
 class WeightMeasurement:
     """Single weight measurement with derived metrics."""
+
     date: date
     weight_kg: float
     weight_lb: float
@@ -197,6 +199,7 @@ class WeightMeasurement:
 @dataclass
 class WeightTrend:
     """Weight trend analysis over time."""
+
     period_days: int
     n_measurements: int
 
@@ -221,6 +224,7 @@ class WeightTrend:
 @dataclass
 class BodyCompositionChange:
     """Body composition change assessment."""
+
     period_days: int
     n_measurements: int
 
@@ -236,6 +240,7 @@ class BodyCompositionChange:
 @dataclass
 class FitnessCorrelation:
     """Correlation between body composition and fitness metrics."""
+
     metric: str
     r: float
     p_value: float
@@ -248,6 +253,7 @@ class FitnessCorrelation:
 @dataclass
 class BodyCompositionReport:
     """Complete body composition analysis report."""
+
     # Current status
     latest_measurement: WeightMeasurement
     bmi: Optional[BMIResult]
@@ -270,6 +276,7 @@ class BodyCompositionReport:
 @dataclass
 class BodyCompositionSummary:
     """Quick summary of body composition status."""
+
     has_sufficient_data: bool
     n_weight_measurements: int
     n_body_fat_measurements: int
@@ -289,10 +296,8 @@ class BodyCompositionSummary:
 # ANALYSIS FUNCTIONS
 # ============================================
 
-def compute_bmi(
-    weight_kg: float,
-    height_m: float
-) -> BMIResult:
+
+def compute_bmi(weight_kg: float, height_m: float) -> BMIResult:
     """
     Calculate BMI and determine WHO classification.
 
@@ -300,10 +305,10 @@ def compute_bmi(
 
     Reference: WHO Technical Report Series 894 (2000)
     """
-    bmi = weight_kg / (height_m ** 2)
+    bmi = weight_kg / (height_m**2)
 
     # Determine category
-    category = 'Normal'
+    category = "Normal"
     for cat, (low, high) in BMI_CATEGORIES.items():
         if low <= bmi < high:
             category = cat
@@ -311,28 +316,26 @@ def compute_bmi(
 
     # Determine health risk
     if bmi < 18.5:
-        health_risk = 'Moderate'  # Underweight has health risks
+        health_risk = "Moderate"  # Underweight has health risks
     elif bmi < 25:
-        health_risk = 'Low'
+        health_risk = "Low"
     elif bmi < 30:
-        health_risk = 'Moderate'
+        health_risk = "Moderate"
     elif bmi < 35:
-        health_risk = 'High'
+        health_risk = "High"
     else:
-        health_risk = 'Very High'
+        health_risk = "Very High"
 
     return BMIResult(
         bmi=round(bmi, 1),
         category=category,
         health_risk=health_risk,
-        reference="WHO Technical Report Series 894 (2000)"
+        reference="WHO Technical Report Series 894 (2000)",
     )
 
 
 def compute_body_fat_percentile(
-    body_fat_pct: float,
-    age: int,
-    sex: str  # 'male' or 'female'
+    body_fat_pct: float, age: int, sex: str  # 'male' or 'female'
 ) -> BodyFatPercentile:
     """
     Compute body fat percentile ranking based on ACSM norms.
@@ -341,7 +344,7 @@ def compute_body_fat_percentile(
     """
     # Find appropriate age range
     age_range = None
-    for (low, high) in ACSM_BODY_FAT_PERCENTILES.keys():
+    for low, high in ACSM_BODY_FAT_PERCENTILES.keys():
         if low <= age <= high:
             age_range = (low, high)
             break
@@ -353,7 +356,7 @@ def compute_body_fat_percentile(
             age_range = (70, 79)
 
     percentiles = ACSM_BODY_FAT_PERCENTILES[age_range]
-    sex_idx = 0 if sex.lower() == 'male' else 1
+    sex_idx = 0 if sex.lower() == "male" else 1
 
     # Find percentile (note: LOWER body fat = HIGHER percentile for fitness)
     # The tables show body fat at each percentile, so we need to find where the person falls
@@ -367,8 +370,12 @@ def compute_body_fat_percentile(
             break
 
     # Determine category
-    categories = BODY_FAT_CATEGORIES_MALE if sex.lower() == 'male' else BODY_FAT_CATEGORIES_FEMALE
-    category = 'Average'
+    categories = (
+        BODY_FAT_CATEGORIES_MALE
+        if sex.lower() == "male"
+        else BODY_FAT_CATEGORIES_FEMALE
+    )
+    category = "Average"
     for cat, (low, high) in categories.items():
         if low <= body_fat_pct < high:
             category = cat
@@ -393,14 +400,14 @@ def compute_body_fat_percentile(
         comparison_group=comparison_group,
         is_healthy=is_healthy,
         healthy_range=healthy_range,
-        reference="ACSM's Guidelines for Exercise Testing and Prescription, 11th ed. (2022)"
+        reference="ACSM's Guidelines for Exercise Testing and Prescription, 11th ed. (2022)",
     )
 
 
 def compute_body_composition(
     weight_kg: float,
     body_fat_pct: Optional[float] = None,
-    height_m: Optional[float] = None
+    height_m: Optional[float] = None,
 ) -> WeightMeasurement:
     """
     Compute full body composition metrics from weight and body fat percentage.
@@ -409,7 +416,7 @@ def compute_body_composition(
 
     bmi = None
     if height_m:
-        bmi = round(weight_kg / (height_m ** 2), 1)
+        bmi = round(weight_kg / (height_m**2), 1)
 
     lean_mass_kg = None
     fat_mass_kg = None
@@ -424,33 +431,32 @@ def compute_body_composition(
         bmi=bmi,
         body_fat_pct=body_fat_pct,
         lean_mass_kg=lean_mass_kg,
-        fat_mass_kg=fat_mass_kg
+        fat_mass_kg=fat_mass_kg,
     )
 
 
 def analyze_weight_trend(
-    df: pd.DataFrame,
-    min_measurements: int = 5
+    df: pd.DataFrame, min_measurements: int = 5
 ) -> Optional[WeightTrend]:
     """
     Analyze weight trend over time with confidence intervals.
 
     Uses ordinary least squares regression with 95% CIs.
     """
-    weight_data = df[df['biomarker_slug'] == 'body_mass'].copy()
+    weight_data = df[df["biomarker_slug"] == "body_mass"].copy()
 
     if len(weight_data) < min_measurements:
         return None
 
-    weight_data['time'] = pd.to_datetime(weight_data['time'])
-    weight_data = weight_data.sort_values('time')
+    weight_data["time"] = pd.to_datetime(weight_data["time"])
+    weight_data = weight_data.sort_values("time")
 
     # Convert to days since first measurement
-    first_date = weight_data['time'].min()
-    weight_data['days'] = (weight_data['time'] - first_date).dt.days
+    first_date = weight_data["time"].min()
+    weight_data["days"] = (weight_data["time"] - first_date).dt.days
 
-    x = weight_data['days'].values
-    y = weight_data['value'].values
+    x = weight_data["days"].values
+    y = weight_data["value"].values
     n = len(x)
 
     # Linear regression
@@ -476,11 +482,11 @@ def analyze_weight_trend(
 
     # Determine direction
     if not is_significant:
-        direction = 'stable'
+        direction = "stable"
     elif slope > 0:
-        direction = 'gaining'
+        direction = "gaining"
     else:
-        direction = 'losing'
+        direction = "losing"
 
     # Interpretation
     if not is_significant:
@@ -504,13 +510,12 @@ def analyze_weight_trend(
         p_value=round(p_value, 4),
         is_significant=is_significant,
         direction=direction,
-        interpretation=interpretation
+        interpretation=interpretation,
     )
 
 
 def analyze_composition_change(
-    df: pd.DataFrame,
-    baseline_days: int = 90
+    df: pd.DataFrame, baseline_days: int = 90
 ) -> Optional[BodyCompositionChange]:
     """
     Analyze changes in body composition over time.
@@ -518,21 +523,21 @@ def analyze_composition_change(
     Compares baseline period to recent measurements to assess
     whether changes are favorable (losing fat, maintaining/gaining lean mass).
     """
-    weight_data = df[df['biomarker_slug'] == 'body_mass'].copy()
-    bf_data = df[df['biomarker_slug'] == 'body_fat_percentage'].copy()
+    weight_data = df[df["biomarker_slug"] == "body_mass"].copy()
+    bf_data = df[df["biomarker_slug"] == "body_fat_percentage"].copy()
 
     if len(weight_data) < 5:
         return None
 
-    weight_data['time'] = pd.to_datetime(weight_data['time'])
-    weight_data = weight_data.sort_values('time')
+    weight_data["time"] = pd.to_datetime(weight_data["time"])
+    weight_data = weight_data.sort_values("time")
 
     # Baseline: first N days
-    first_date = weight_data['time'].min()
+    first_date = weight_data["time"].min()
     baseline_cutoff = first_date + timedelta(days=baseline_days)
 
-    baseline_weights = weight_data[weight_data['time'] <= baseline_cutoff]['value']
-    recent_weights = weight_data.tail(5)['value']
+    baseline_weights = weight_data[weight_data["time"] <= baseline_cutoff]["value"]
+    recent_weights = weight_data.tail(5)["value"]
 
     if len(baseline_weights) < 2 or len(recent_weights) < 2:
         return None
@@ -547,11 +552,11 @@ def analyze_composition_change(
     fat_mass_change = None
 
     if len(bf_data) >= 4:
-        bf_data['time'] = pd.to_datetime(bf_data['time'])
-        bf_data = bf_data.sort_values('time')
+        bf_data["time"] = pd.to_datetime(bf_data["time"])
+        bf_data = bf_data.sort_values("time")
 
-        baseline_bf = bf_data.head(2)['value'].mean()
-        recent_bf = bf_data.tail(2)['value'].mean()
+        baseline_bf = bf_data.head(2)["value"].mean()
+        recent_bf = bf_data.tail(2)["value"].mean()
         body_fat_change = recent_bf - baseline_bf
 
         # Estimate fat and lean mass changes
@@ -564,23 +569,33 @@ def analyze_composition_change(
         lean_mass_change = recent_lean - baseline_lean
 
     # Determine quality of composition change
-    composition_quality = 'Neutral'
+    composition_quality = "Neutral"
     if body_fat_change is not None:
-        if body_fat_change < -1 and (lean_mass_change is None or lean_mass_change >= -0.5):
-            composition_quality = 'Favorable'  # Losing fat, maintaining lean
-        elif body_fat_change > 1 and (lean_mass_change is None or lean_mass_change <= 0.5):
-            composition_quality = 'Unfavorable'  # Gaining fat
-        elif lean_mass_change is not None and lean_mass_change > 1 and body_fat_change < 0.5:
-            composition_quality = 'Favorable'  # Gaining lean mass without much fat
+        if body_fat_change < -1 and (
+            lean_mass_change is None or lean_mass_change >= -0.5
+        ):
+            composition_quality = "Favorable"  # Losing fat, maintaining lean
+        elif body_fat_change > 1 and (
+            lean_mass_change is None or lean_mass_change <= 0.5
+        ):
+            composition_quality = "Unfavorable"  # Gaining fat
+        elif (
+            lean_mass_change is not None
+            and lean_mass_change > 1
+            and body_fat_change < 0.5
+        ):
+            composition_quality = "Favorable"  # Gaining lean mass without much fat
 
     # Interpretation
     if body_fat_change is not None:
-        if composition_quality == 'Favorable':
+        if composition_quality == "Favorable":
             interpretation = f"Favorable recomposition: {abs(body_fat_change):.1f}% body fat change with lean mass preserved"
-        elif composition_quality == 'Unfavorable':
-            interpretation = f"Body fat increased by {body_fat_change:.1f} percentage points"
+        elif composition_quality == "Unfavorable":
+            interpretation = (
+                f"Body fat increased by {body_fat_change:.1f} percentage points"
+            )
         else:
-            interpretation = f"Body composition relatively stable"
+            interpretation = "Body composition relatively stable"
     else:
         if weight_change > 2:
             interpretation = f"Weight increased {weight_change:.1f} kg (body fat data unavailable for composition analysis)"
@@ -589,7 +604,7 @@ def analyze_composition_change(
         else:
             interpretation = "Weight stable"
 
-    period = int((weight_data['time'].max() - first_date).days)
+    period = int((weight_data["time"].max() - first_date).days)
 
     return BodyCompositionChange(
         period_days=period,
@@ -599,12 +614,12 @@ def analyze_composition_change(
         lean_mass_change_kg=round(lean_mass_change, 1) if lean_mass_change else None,
         fat_mass_change_kg=round(fat_mass_change, 1) if fat_mass_change else None,
         composition_quality=composition_quality,
-        interpretation=interpretation
+        interpretation=interpretation,
     )
 
 
 def compute_fitness_correlations(
-    df: pd.DataFrame
+    df: pd.DataFrame,
 ) -> Tuple[Optional[FitnessCorrelation], Optional[FitnessCorrelation]]:
     """
     Compute correlations between body weight and fitness metrics.
@@ -616,23 +631,23 @@ def compute_fitness_correlations(
     vo2_corr = None
     rhr_corr = None
 
-    weight_data = df[df['biomarker_slug'] == 'body_mass'].copy()
+    weight_data = df[df["biomarker_slug"] == "body_mass"].copy()
     if len(weight_data) == 0:
         return None, None
 
-    weight_data['date'] = pd.to_datetime(weight_data['time']).dt.date
-    weight_daily = weight_data.groupby('date')['value'].mean()
+    weight_data["date"] = pd.to_datetime(weight_data["time"]).dt.date
+    weight_daily = weight_data.groupby("date")["value"].mean()
 
     # VO2 Max correlation
-    vo2_data = df[df['biomarker_slug'] == 'vo2_max'].copy()
+    vo2_data = df[df["biomarker_slug"] == "vo2_max"].copy()
     if len(vo2_data) > 0:
-        vo2_data['date'] = pd.to_datetime(vo2_data['time']).dt.date
-        vo2_daily = vo2_data.groupby('date')['value'].mean()
+        vo2_data["date"] = pd.to_datetime(vo2_data["time"]).dt.date
+        vo2_daily = vo2_data.groupby("date")["value"].mean()
 
         common = weight_daily.index.intersection(vo2_daily.index)
         if len(common) >= 10:
             r, p = stats.pearsonr(weight_daily[common], vo2_daily[common])
-            direction = 'positive' if r > 0 else 'negative'
+            direction = "positive" if r > 0 else "negative"
 
             # Interpretation based on literature
             if p < 0.05:
@@ -650,19 +665,19 @@ def compute_fitness_correlations(
                 n=len(common),
                 is_significant=p < 0.05,
                 direction=direction,
-                interpretation=interp
+                interpretation=interp,
             )
 
     # RHR correlation
-    rhr_data = df[df['biomarker_slug'] == 'heart_rate_resting'].copy()
+    rhr_data = df[df["biomarker_slug"] == "heart_rate_resting"].copy()
     if len(rhr_data) > 0:
-        rhr_data['date'] = pd.to_datetime(rhr_data['time']).dt.date
-        rhr_daily = rhr_data.groupby('date')['value'].mean()
+        rhr_data["date"] = pd.to_datetime(rhr_data["time"]).dt.date
+        rhr_daily = rhr_data.groupby("date")["value"].mean()
 
         common = weight_daily.index.intersection(rhr_daily.index)
         if len(common) >= 10:
             r, p = stats.pearsonr(weight_daily[common], rhr_daily[common])
-            direction = 'positive' if r > 0 else 'negative'
+            direction = "positive" if r > 0 else "negative"
 
             if p < 0.05:
                 if r > 0:
@@ -679,7 +694,7 @@ def compute_fitness_correlations(
                 n=len(common),
                 is_significant=p < 0.05,
                 direction=direction,
-                interpretation=interp
+                interpretation=interp,
             )
 
     return vo2_corr, rhr_corr
@@ -689,22 +704,22 @@ def generate_body_composition_report(
     df: pd.DataFrame,
     height_m: Optional[float] = None,
     age: Optional[int] = None,
-    sex: Optional[str] = None
+    sex: Optional[str] = None,
 ) -> Optional[BodyCompositionReport]:
     """
     Generate complete body composition analysis report.
 
     All analyses use peer-reviewed, validated methods.
     """
-    weight_data = df[df['biomarker_slug'] == 'body_mass'].copy()
-    bf_data = df[df['biomarker_slug'] == 'body_fat_percentage'].copy()
-    lean_data = df[df['biomarker_slug'] == 'lean_body_mass'].copy()
+    weight_data = df[df["biomarker_slug"] == "body_mass"].copy()
+    bf_data = df[df["biomarker_slug"] == "body_fat_percentage"].copy()
+    lean_data = df[df["biomarker_slug"] == "lean_body_mass"].copy()
 
     if len(weight_data) == 0:
         return None
 
-    weight_data['time'] = pd.to_datetime(weight_data['time'])
-    weight_data = weight_data.sort_values('time')
+    weight_data["time"] = pd.to_datetime(weight_data["time"])
+    weight_data = weight_data.sort_values("time")
 
     # Build measurements list
     measurements = []
@@ -712,26 +727,26 @@ def generate_body_composition_report(
     # Get body fat by date for matching
     bf_by_date = {}
     if len(bf_data) > 0:
-        bf_data['time'] = pd.to_datetime(bf_data['time'])
+        bf_data["time"] = pd.to_datetime(bf_data["time"])
         for _, row in bf_data.iterrows():
-            bf_by_date[row['time'].date()] = row['value']
+            bf_by_date[row["time"].date()] = row["value"]
 
     lean_by_date = {}
     if len(lean_data) > 0:
-        lean_data['time'] = pd.to_datetime(lean_data['time'])
+        lean_data["time"] = pd.to_datetime(lean_data["time"])
         for _, row in lean_data.iterrows():
-            lean_by_date[row['time'].date()] = row['value']
+            lean_by_date[row["time"].date()] = row["value"]
 
     for _, row in weight_data.iterrows():
-        weight_kg = row['value']
-        measurement_date = row['time'].date()
+        weight_kg = row["value"]
+        measurement_date = row["time"].date()
 
         body_fat_pct = bf_by_date.get(measurement_date)
         lean_mass = lean_by_date.get(measurement_date)
 
         bmi = None
         if height_m:
-            bmi = round(weight_kg / (height_m ** 2), 1)
+            bmi = round(weight_kg / (height_m**2), 1)
 
         fat_mass = None
         if body_fat_pct is not None:
@@ -739,15 +754,17 @@ def generate_body_composition_report(
             if lean_mass is None:
                 lean_mass = round(weight_kg - fat_mass, 2)
 
-        measurements.append(WeightMeasurement(
-            date=measurement_date,
-            weight_kg=round(weight_kg, 2),
-            weight_lb=round(weight_kg * 2.20462, 2),
-            bmi=bmi,
-            body_fat_pct=round(body_fat_pct, 1) if body_fat_pct else None,
-            lean_mass_kg=round(lean_mass, 2) if lean_mass else None,
-            fat_mass_kg=fat_mass
-        ))
+        measurements.append(
+            WeightMeasurement(
+                date=measurement_date,
+                weight_kg=round(weight_kg, 2),
+                weight_lb=round(weight_kg * 2.20462, 2),
+                bmi=bmi,
+                body_fat_pct=round(body_fat_pct, 1) if body_fat_pct else None,
+                lean_mass_kg=round(lean_mass, 2) if lean_mass else None,
+                fat_mass_kg=fat_mass,
+            )
+        )
 
     # Latest measurement
     latest = measurements[-1]
@@ -779,46 +796,79 @@ def generate_body_composition_report(
     insights.append(f"Current weight: {latest.weight_kg} kg ({latest.weight_lb} lb)")
 
     if bmi_result:
-        insights.append(f"BMI: {bmi_result.bmi} ({bmi_result.category}, {bmi_result.health_risk} health risk)")
+        insights.append(
+            f"BMI: {bmi_result.bmi} ({bmi_result.category}, {bmi_result.health_risk} health risk)"
+        )
 
     if bf_percentile:
-        insights.append(f"Body fat: {bf_percentile.body_fat_pct}% ({bf_percentile.percentile}th percentile, {bf_percentile.category})")
+        insights.append(
+            f"Body fat: {bf_percentile.body_fat_pct}% ({bf_percentile.percentile}th percentile, {bf_percentile.category})"
+        )
         if bf_percentile.is_healthy:
-            insights.append(f"Body fat within healthy range ({bf_percentile.healthy_range[0]}-{bf_percentile.healthy_range[1]}%)")
+            insights.append(
+                f"Body fat within healthy range ({bf_percentile.healthy_range[0]}-{bf_percentile.healthy_range[1]}%)"
+            )
         else:
-            insights.append(f"Body fat outside healthy range ({bf_percentile.healthy_range[0]}-{bf_percentile.healthy_range[1]}%)")
+            insights.append(
+                f"Body fat outside healthy range ({bf_percentile.healthy_range[0]}-{bf_percentile.healthy_range[1]}%)"
+            )
 
     if weight_trend and weight_trend.is_significant:
-        insights.append(f"Weight trend: {weight_trend.direction} ({weight_trend.slope_weekly:+.2f} kg/week)")
+        insights.append(
+            f"Weight trend: {weight_trend.direction} ({weight_trend.slope_weekly:+.2f} kg/week)"
+        )
 
     if composition_change and composition_change.body_fat_change_pct is not None:
         insights.append(f"Body composition: {composition_change.composition_quality}")
 
     if vo2_corr and vo2_corr.is_significant:
-        insights.append(f"Weight-VO2Max correlation: r={vo2_corr.r} ({vo2_corr.direction})")
+        insights.append(
+            f"Weight-VO2Max correlation: r={vo2_corr.r} ({vo2_corr.direction})"
+        )
 
     # Recommendations
     if bmi_result:
-        if bmi_result.category in ['Overweight', 'Obese Class I', 'Obese Class II', 'Obese Class III']:
-            recommendations.append("Consider gradual weight reduction through diet and exercise")
-            recommendations.append("Target: 0.5-1 kg weight loss per week for sustainable results")
-        elif bmi_result.category in ['Underweight', 'Severely Underweight']:
-            recommendations.append("Consider gradual weight gain with focus on lean mass")
+        if bmi_result.category in [
+            "Overweight",
+            "Obese Class I",
+            "Obese Class II",
+            "Obese Class III",
+        ]:
+            recommendations.append(
+                "Consider gradual weight reduction through diet and exercise"
+            )
+            recommendations.append(
+                "Target: 0.5-1 kg weight loss per week for sustainable results"
+            )
+        elif bmi_result.category in ["Underweight", "Severely Underweight"]:
+            recommendations.append(
+                "Consider gradual weight gain with focus on lean mass"
+            )
 
     if bf_percentile and not bf_percentile.is_healthy:
         if bf_percentile.body_fat_pct > bf_percentile.healthy_range[1]:
-            recommendations.append("Focus on fat loss while preserving lean mass through resistance training")
+            recommendations.append(
+                "Focus on fat loss while preserving lean mass through resistance training"
+            )
         else:
-            recommendations.append("Body fat may be too low - ensure adequate nutrition")
+            recommendations.append(
+                "Body fat may be too low - ensure adequate nutrition"
+            )
 
     if weight_trend and weight_trend.is_significant:
         if weight_trend.slope_weekly > 0.5:
-            recommendations.append("Rapid weight gain detected - review diet and activity levels")
+            recommendations.append(
+                "Rapid weight gain detected - review diet and activity levels"
+            )
         elif weight_trend.slope_weekly < -1.0:
-            recommendations.append("Rapid weight loss may lead to muscle loss - consider slowing rate")
+            recommendations.append(
+                "Rapid weight loss may lead to muscle loss - consider slowing rate"
+            )
 
     if not recommendations:
-        recommendations.append("Maintain current weight through balanced nutrition and regular exercise")
+        recommendations.append(
+            "Maintain current weight through balanced nutrition and regular exercise"
+        )
 
     return BodyCompositionReport(
         latest_measurement=latest,
@@ -830,7 +880,7 @@ def generate_body_composition_report(
         vo2max_correlation=vo2_corr,
         rhr_correlation=rhr_corr,
         insights=insights,
-        recommendations=recommendations
+        recommendations=recommendations,
     )
 
 
@@ -838,13 +888,13 @@ def get_body_composition_summary(
     df: pd.DataFrame,
     height_m: Optional[float] = None,
     age: Optional[int] = None,
-    sex: Optional[str] = None
+    sex: Optional[str] = None,
 ) -> BodyCompositionSummary:
     """
     Get quick summary of body composition status.
     """
-    weight_data = df[df['biomarker_slug'] == 'body_mass'].copy()
-    bf_data = df[df['biomarker_slug'] == 'body_fat_percentage'].copy()
+    weight_data = df[df["biomarker_slug"] == "body_mass"].copy()
+    bf_data = df[df["biomarker_slug"] == "body_fat_percentage"].copy()
 
     n_weight = len(weight_data)
     n_bf = len(bf_data)
@@ -860,11 +910,11 @@ def get_body_composition_summary(
             latest_body_fat_pct=None,
             body_fat_category=None,
             weight_trend_direction=None,
-            overall_assessment="No body composition data available"
+            overall_assessment="No body composition data available",
         )
 
-    weight_data['time'] = pd.to_datetime(weight_data['time'])
-    latest_weight = weight_data.sort_values('time').iloc[-1]['value']
+    weight_data["time"] = pd.to_datetime(weight_data["time"])
+    latest_weight = weight_data.sort_values("time").iloc[-1]["value"]
 
     latest_bmi = None
     bmi_category = None
@@ -876,11 +926,15 @@ def get_body_composition_summary(
     latest_bf = None
     bf_category = None
     if n_bf > 0:
-        bf_data['time'] = pd.to_datetime(bf_data['time'])
-        latest_bf = bf_data.sort_values('time').iloc[-1]['value']
+        bf_data["time"] = pd.to_datetime(bf_data["time"])
+        latest_bf = bf_data.sort_values("time").iloc[-1]["value"]
 
         if sex:
-            categories = BODY_FAT_CATEGORIES_MALE if sex.lower() == 'male' else BODY_FAT_CATEGORIES_FEMALE
+            categories = (
+                BODY_FAT_CATEGORIES_MALE
+                if sex.lower() == "male"
+                else BODY_FAT_CATEGORIES_FEMALE
+            )
             for cat, (low, high) in categories.items():
                 if low <= latest_bf < high:
                     bf_category = cat
@@ -898,7 +952,7 @@ def get_body_composition_summary(
         parts.append(f"BMI {latest_bmi} ({bmi_category})")
     if latest_bf:
         parts.append(f"Body fat {latest_bf:.1f}%")
-    if trend_direction and trend_direction != 'stable':
+    if trend_direction and trend_direction != "stable":
         parts.append(f"Weight {trend_direction}")
 
     assessment = ", ".join(parts) if parts else f"Weight: {latest_weight:.1f} kg"
@@ -913,5 +967,5 @@ def get_body_composition_summary(
         latest_body_fat_pct=round(latest_bf, 1) if latest_bf else None,
         body_fat_category=bf_category,
         weight_trend_direction=trend_direction,
-        overall_assessment=assessment
+        overall_assessment=assessment,
     )

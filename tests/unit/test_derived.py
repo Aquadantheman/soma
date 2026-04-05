@@ -1,16 +1,17 @@
 """Unit tests for derived compound metrics."""
 
-import pytest
-import pandas as pd
-import numpy as np
 from datetime import datetime, timedelta
 
+import numpy as np
+import pandas as pd
+import pytest
+
 from soma.statistics.derived import (
-    analyze_nocturnal_dip,
-    analyze_training_load,
     analyze_autonomic_balance,
-    analyze_stress_index,
     analyze_behavioral_regularity,
+    analyze_nocturnal_dip,
+    analyze_stress_index,
+    analyze_training_load,
     generate_derived_metrics_report,
 )
 
@@ -48,11 +49,9 @@ class TestNocturnalDip:
                 dates.append(base_date + timedelta(hours=hour))
                 values.append(70 + np.random.normal(0, 3))
 
-        df = pd.DataFrame({
-            "time": dates,
-            "biomarker_slug": "heart_rate",
-            "value": values
-        })
+        df = pd.DataFrame(
+            {"time": dates, "biomarker_slug": "heart_rate", "value": values}
+        )
 
         result = analyze_nocturnal_dip(df)
 
@@ -85,17 +84,20 @@ class TestNocturnalDip:
                 dates.append(base_date + timedelta(hours=hour))
                 values.append(69 + np.random.normal(0, 2))
 
-        df = pd.DataFrame({
-            "time": dates,
-            "biomarker_slug": "heart_rate",
-            "value": values
-        })
+        df = pd.DataFrame(
+            {"time": dates, "biomarker_slug": "heart_rate", "value": values}
+        )
 
         result = analyze_nocturnal_dip(df)
 
         assert result is not None
         # Just verify the analysis runs - exact thresholds depend on data
-        assert result.classification in ["non-dipper", "dipper", "extreme-dipper", "reverse-dipper"]
+        assert result.classification in [
+            "non-dipper",
+            "dipper",
+            "extreme-dipper",
+            "reverse-dipper",
+        ]
 
 
 class TestTrainingLoad:
@@ -120,11 +122,13 @@ class TestTrainingLoad:
                 hourly_dates.append(date + timedelta(hours=hour + 8))
                 hourly_values.append(1000 + np.random.normal(0, 50))
 
-        df = pd.DataFrame({
-            "time": hourly_dates,
-            "biomarker_slug": "active_energy",
-            "value": hourly_values
-        })
+        df = pd.DataFrame(
+            {
+                "time": hourly_dates,
+                "biomarker_slug": "active_energy",
+                "value": hourly_values,
+            }
+        )
 
         result = analyze_training_load(df)
 
@@ -147,17 +151,24 @@ class TestTrainingLoad:
                 else:
                     hourly_values.append(1500 + np.random.normal(0, 50))  # 3x spike
 
-        df = pd.DataFrame({
-            "time": hourly_dates,
-            "biomarker_slug": "active_energy",
-            "value": hourly_values
-        })
+        df = pd.DataFrame(
+            {
+                "time": hourly_dates,
+                "biomarker_slug": "active_energy",
+                "value": hourly_values,
+            }
+        )
 
         result = analyze_training_load(df)
 
         assert result is not None
         # Just verify the analysis runs
-        assert result.classification in ["optimal", "undertrained", "overreaching", "dangerous"]
+        assert result.classification in [
+            "optimal",
+            "undertrained",
+            "overreaching",
+            "dangerous",
+        ]
 
 
 class TestAutonomicBalance:
@@ -175,7 +186,9 @@ class TestAutonomicBalance:
         assert result is not None
         assert result.hrv_mean > 0
         assert result.rhr_mean > 0
-        assert result.ratio == pytest.approx(result.hrv_mean / result.rhr_mean, rel=0.01)
+        assert result.ratio == pytest.approx(
+            result.hrv_mean / result.rhr_mean, rel=0.01
+        )
 
 
 class TestStressIndex:
@@ -225,11 +238,9 @@ class TestBehavioralRegularity:
                 hourly_dates.append(date + timedelta(hours=hour))
                 hourly_values.append(np.random.uniform(100, 2000))
 
-        df = pd.DataFrame({
-            "time": hourly_dates,
-            "biomarker_slug": "steps",
-            "value": hourly_values
-        })
+        df = pd.DataFrame(
+            {"time": hourly_dates, "biomarker_slug": "steps", "value": hourly_values}
+        )
 
         result = analyze_behavioral_regularity(df)
 
@@ -246,13 +257,15 @@ class TestDerivedMetricsReport:
 
         assert result is not None
         # At least some metrics should be computed
-        metrics_computed = sum([
-            result.nocturnal_dip is not None,
-            result.training_load is not None,
-            result.autonomic_balance is not None,
-            result.stress_index is not None,
-            result.behavioral_regularity is not None,
-        ])
+        metrics_computed = sum(
+            [
+                result.nocturnal_dip is not None,
+                result.training_load is not None,
+                result.autonomic_balance is not None,
+                result.stress_index is not None,
+                result.behavioral_regularity is not None,
+            ]
+        )
         assert metrics_computed >= 1
 
     def test_reports_concerns_and_findings(self, combined_signals_df):

@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy import text
@@ -30,8 +30,10 @@ DEFAULT_USER_ID = UUID("00000000-0000-0000-0000-000000000001")
 # Schemas
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class OAuthConnection(BaseModel):
     """OAuth connection info for a user."""
+
     id: UUID
     provider_slug: str
     external_user_id: Optional[str] = None
@@ -42,6 +44,7 @@ class OAuthConnection(BaseModel):
 
 class OAuthConnectionList(BaseModel):
     """List of user's OAuth connections."""
+
     connections: list[OAuthConnection]
 
 
@@ -89,6 +92,7 @@ def cleanup_expired_states():
 # ─────────────────────────────────────────────────────────────────────────────
 # Endpoints
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 @router.get("/authorize/{provider}")
 async def authorize(
@@ -189,7 +193,9 @@ async def oauth_callback(
                     external_user_id = None
 
                 # Calculate token expiry
-                expires_at = datetime.now(timezone.utc) + timedelta(seconds=token_response.expires_in)
+                expires_at = datetime.now(timezone.utc) + timedelta(
+                    seconds=token_response.expires_in
+                )
 
                 # Parse scopes
                 scopes = token_response.scope.split() if token_response.scope else []
@@ -234,7 +240,9 @@ async def oauth_callback(
                 }
 
         except WhoopAPIError as e:
-            raise HTTPException(status_code=400, detail=f"Failed to connect Whoop: {e.message}")
+            raise HTTPException(
+                status_code=400, detail=f"Failed to connect Whoop: {e.message}"
+            )
 
     raise HTTPException(status_code=400, detail=f"Unknown OAuth provider: {provider}")
 
@@ -258,14 +266,16 @@ async def list_connections(
 
     connections = []
     for row in result.fetchall():
-        connections.append(OAuthConnection(
-            id=row[0],
-            provider_slug=row[1],
-            external_user_id=row[2],
-            scopes=row[3],
-            connected_at=row[4],
-            last_sync_at=row[5],
-        ))
+        connections.append(
+            OAuthConnection(
+                id=row[0],
+                provider_slug=row[1],
+                external_user_id=row[2],
+                scopes=row[3],
+                connected_at=row[4],
+                last_sync_at=row[5],
+            )
+        )
 
     return OAuthConnectionList(connections=connections)
 
@@ -291,6 +301,8 @@ async def disconnect(
     db.commit()
 
     if not result.fetchone():
-        raise HTTPException(status_code=404, detail=f"No connection found for provider: {provider}")
+        raise HTTPException(
+            status_code=404, detail=f"No connection found for provider: {provider}"
+        )
 
     return {"status": "disconnected", "provider": provider}

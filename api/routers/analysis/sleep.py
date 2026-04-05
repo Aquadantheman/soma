@@ -7,8 +7,7 @@ Provides API access to sleep architecture analysis:
 - Trend analysis over time
 """
 
-from typing import Optional, List
-from datetime import date
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -34,7 +33,7 @@ def _ci_to_dict(ci) -> dict:
         "ci_lower": ci.ci_lower,
         "ci_upper": ci.ci_upper,
         "n": ci.n,
-        "confidence": ci.confidence
+        "confidence": ci.confidence,
     }
 
 
@@ -50,7 +49,7 @@ def _nightly_to_schema(night) -> NightlySleepSchema:
         rem_pct=night.rem_pct,
         deep_pct=night.deep_pct,
         core_pct=night.core_pct,
-        efficiency=night.efficiency
+        efficiency=night.efficiency,
     )
 
 
@@ -82,13 +81,13 @@ def get_sleep_architecture(
     df = load_signals(
         db,
         biomarker_slugs=["sleep_rem", "sleep_deep", "sleep_core", "sleep_in_bed"],
-        days=days
+        days=days,
     )
 
     if df is None or len(df) < 14:
         raise HTTPException(
             status_code=404,
-            detail=f"Insufficient sleep data. Need at least 14 nights, found {len(df) if df is not None else 0} records."
+            detail=f"Insufficient sleep data. Need at least 14 nights, found {len(df) if df is not None else 0} records.",
         )
 
     report = generate_sleep_report(df, baseline_days=days, trend_days=min(30, days))
@@ -109,7 +108,7 @@ def get_sleep_architecture(
             core_pct=_ci_to_dict(report.baseline.core_pct),
             efficiency=_ci_to_dict(report.baseline.efficiency),
             is_stable=report.baseline.is_stable,
-            consistency_score=report.baseline.consistency_score
+            consistency_score=report.baseline.consistency_score,
         )
 
     recent_nights_schema = [_nightly_to_schema(n) for n in report.recent_nights]
@@ -127,7 +126,7 @@ def get_sleep_architecture(
             is_deep_low=d.is_deep_low,
             is_efficiency_low=d.is_efficiency_low,
             is_notable=d.is_notable,
-            interpretation=d.interpretation
+            interpretation=d.interpretation,
         )
 
     trends_schema = [
@@ -140,7 +139,7 @@ def get_sleep_architecture(
             r_squared=t.r_squared,
             is_significant=t.is_significant,
             direction=t.direction,
-            interpretation=t.interpretation
+            interpretation=t.interpretation,
         )
         for t in report.trends
     ]
@@ -154,7 +153,7 @@ def get_sleep_architecture(
         insights=report.insights,
         avg_rem_pct_30d=report.avg_rem_pct_30d,
         avg_deep_pct_30d=report.avg_deep_pct_30d,
-        avg_efficiency_30d=report.avg_efficiency_30d
+        avg_efficiency_30d=report.avg_efficiency_30d,
     )
 
 
@@ -177,7 +176,7 @@ def get_nightly_sleep(
     df = load_signals(
         db,
         biomarker_slugs=["sleep_rem", "sleep_deep", "sleep_core", "sleep_in_bed"],
-        days=days
+        days=days,
     )
 
     if df is None or len(df) == 0:
@@ -203,7 +202,7 @@ def get_sleep_summary(
     df = load_signals(
         db,
         biomarker_slugs=["sleep_rem", "sleep_deep", "sleep_core", "sleep_in_bed"],
-        days=days
+        days=days,
     )
 
     if df is None or len(df) == 0:
@@ -216,7 +215,7 @@ def get_sleep_summary(
             avg_efficiency=None,
             consistency_score=None,
             top_concern=None,
-            overall_assessment="Insufficient sleep stage data"
+            overall_assessment="Insufficient sleep stage data",
         )
 
     nights = compute_nightly_sleep(df)
@@ -232,10 +231,11 @@ def get_sleep_summary(
             avg_efficiency=None,
             consistency_score=None,
             top_concern=None,
-            overall_assessment=f"Need at least 7 nights, found {len(nights)}"
+            overall_assessment=f"Need at least 7 nights, found {len(nights)}",
         )
 
     import numpy as np
+
     avg_total = float(np.mean([n.total_sleep_min for n in nights]))
     avg_rem = float(np.mean([n.rem_pct for n in nights]))
     avg_deep = float(np.mean([n.deep_pct for n in nights]))
@@ -266,7 +266,7 @@ def get_sleep_summary(
         avg_efficiency=avg_eff,
         consistency_score=baseline.consistency_score if baseline else None,
         top_concern=concerns[0] if concerns else None,
-        overall_assessment=assessment
+        overall_assessment=assessment,
     )
 
 
@@ -287,14 +287,13 @@ def get_sleep_trend(
     valid_metrics = ["rem_pct", "deep_pct", "core_pct", "efficiency", "total_sleep_min"]
     if metric not in valid_metrics:
         raise HTTPException(
-            status_code=400,
-            detail=f"Invalid metric. Must be one of: {valid_metrics}"
+            status_code=400, detail=f"Invalid metric. Must be one of: {valid_metrics}"
         )
 
     df = load_signals(
         db,
         biomarker_slugs=["sleep_rem", "sleep_deep", "sleep_core", "sleep_in_bed"],
-        days=days
+        days=days,
     )
 
     if df is None or len(df) == 0:
@@ -303,7 +302,9 @@ def get_sleep_trend(
     trend = analyze_sleep_trend(df, metric=metric, period_days=days)
 
     if trend is None:
-        raise HTTPException(status_code=404, detail="Insufficient data for trend analysis")
+        raise HTTPException(
+            status_code=404, detail="Insufficient data for trend analysis"
+        )
 
     return SleepArchitectureTrendSchema(
         metric=trend.metric,
@@ -314,5 +315,5 @@ def get_sleep_trend(
         r_squared=trend.r_squared,
         is_significant=trend.is_significant,
         direction=trend.direction,
-        interpretation=trend.interpretation
+        interpretation=trend.interpretation,
     )

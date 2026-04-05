@@ -1,7 +1,5 @@
 """Integration tests for API health and structure."""
 
-import pytest
-
 
 class TestAPIHealth:
     """Test API health and basic endpoints (public, no auth required)."""
@@ -53,4 +51,7 @@ class TestAnalysisRouterStructure:
         for endpoint in endpoints:
             response = authenticated_client.get(endpoint)
             # Should not return 500 (server error), 405 (method not allowed), or 401 (unauthorized)
-            assert response.status_code in [200, 404], f"Endpoint {endpoint} returned {response.status_code}"
+            assert response.status_code in [
+                200,
+                404,
+            ], f"Endpoint {endpoint} returned {response.status_code}"

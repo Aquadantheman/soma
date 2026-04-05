@@ -1,15 +1,13 @@
 """Unit tests for stability analysis functions."""
 
-import pytest
-import pandas as pd
 import numpy as np
-from datetime import datetime
+import pandas as pd
 
 from soma.statistics.stability import (
     analyze_convergence,
-    analyze_temporal_stability,
     analyze_drift,
     analyze_sample_adequacy,
+    analyze_temporal_stability,
     generate_stability_report,
 )
 
@@ -65,11 +63,9 @@ class TestTemporalStability:
         dates = pd.date_range(start="2021-01-01", end="2023-12-31", freq="D")
         values = np.random.normal(70, 5, len(dates))
 
-        df = pd.DataFrame({
-            "time": dates,
-            "biomarker_slug": "heart_rate",
-            "value": values
-        })
+        df = pd.DataFrame(
+            {"time": dates, "biomarker_slug": "heart_rate", "value": values}
+        )
 
         result = analyze_temporal_stability(df, "heart_rate")
 
@@ -86,11 +82,11 @@ class TestTemporalStability:
         for year, mean in [(2021, 60), (2022, 80), (2023, 100)]:
             dates = pd.date_range(start=f"{year}-01-01", end=f"{year}-12-31", freq="D")
             values = np.random.normal(mean, 3, len(dates))
-            df_list.append(pd.DataFrame({
-                "time": dates,
-                "biomarker_slug": "heart_rate",
-                "value": values
-            }))
+            df_list.append(
+                pd.DataFrame(
+                    {"time": dates, "biomarker_slug": "heart_rate", "value": values}
+                )
+            )
 
         df = pd.concat(df_list, ignore_index=True)
         result = analyze_temporal_stability(df, "heart_rate")
@@ -118,10 +114,25 @@ class TestDriftAnalysis:
         recent_dates = pd.date_range(start="2023-01-01", end="2023-12-31", freq="D")
         recent_values = np.random.normal(80, 3, len(recent_dates))  # 10 bpm higher
 
-        df = pd.concat([
-            pd.DataFrame({"time": hist_dates, "biomarker_slug": "heart_rate", "value": hist_values}),
-            pd.DataFrame({"time": recent_dates, "biomarker_slug": "heart_rate", "value": recent_values})
-        ], ignore_index=True)
+        df = pd.concat(
+            [
+                pd.DataFrame(
+                    {
+                        "time": hist_dates,
+                        "biomarker_slug": "heart_rate",
+                        "value": hist_values,
+                    }
+                ),
+                pd.DataFrame(
+                    {
+                        "time": recent_dates,
+                        "biomarker_slug": "heart_rate",
+                        "value": recent_values,
+                    }
+                ),
+            ],
+            ignore_index=True,
+        )
 
         result = analyze_drift(df, "heart_rate")
 
@@ -137,11 +148,9 @@ class TestDriftAnalysis:
         dates = pd.date_range(start="2022-01-01", end="2023-12-31", freq="D")
         values = np.random.normal(70, 3, len(dates))
 
-        df = pd.DataFrame({
-            "time": dates,
-            "biomarker_slug": "heart_rate",
-            "value": values
-        })
+        df = pd.DataFrame(
+            {"time": dates, "biomarker_slug": "heart_rate", "value": values}
+        )
 
         result = analyze_drift(df, "heart_rate")
 

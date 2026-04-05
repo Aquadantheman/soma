@@ -52,7 +52,7 @@ def get_circadian_analysis(
     if result is None:
         raise HTTPException(
             status_code=404,
-            detail="Insufficient heart rate data for circadian analysis (need 100+ samples)"
+            detail="Insufficient heart rate data for circadian analysis (need 100+ samples)",
         )
 
     return CircadianAnalysis(
@@ -62,7 +62,7 @@ def get_circadian_analysis(
                 mean=p.stats.mean,
                 ci_lower=p.stats.ci_lower,
                 ci_upper=p.stats.ci_upper,
-                n=p.stats.n
+                n=p.stats.n,
             )
             for p in result.hourly_patterns
         ],
@@ -74,7 +74,7 @@ def get_circadian_analysis(
         highest_hr_ci=(result.highest_hr.ci_lower, result.highest_hr.ci_upper),
         amplitude=result.amplitude,
         is_significant=result.is_significant,
-        total_samples=result.total_samples
+        total_samples=result.total_samples,
     )
 
 
@@ -94,8 +94,7 @@ def get_weekly_analysis(
 
     if result is None:
         raise HTTPException(
-            status_code=404,
-            detail="Insufficient step data for weekly analysis"
+            status_code=404, detail="Insufficient step data for weekly analysis"
         )
 
     return WeeklyActivityAnalysis(
@@ -106,7 +105,7 @@ def get_weekly_analysis(
                 mean=p.stats.mean,
                 ci_lower=p.stats.ci_lower,
                 ci_upper=p.stats.ci_upper,
-                n=p.stats.n
+                n=p.stats.n,
             )
             for p in result.daily_patterns
         ],
@@ -115,7 +114,7 @@ def get_weekly_analysis(
         f_statistic=result.f_statistic,
         p_value=result.p_value,
         is_significant=result.is_significant,
-        total_days=result.total_days
+        total_days=result.total_days,
     )
 
 
@@ -137,7 +136,7 @@ def get_trend_analysis(
     if result is None:
         raise HTTPException(
             status_code=404,
-            detail=f"Insufficient data for trend analysis on '{biomarker_slug}'"
+            detail=f"Insufficient data for trend analysis on '{biomarker_slug}'",
         )
 
     return TrendAnalysis(
@@ -147,7 +146,7 @@ def get_trend_analysis(
                 mean=s["mean"],
                 ci_lower=s["ci_lower"],
                 ci_upper=s["ci_upper"],
-                n=s["n"]
+                n=s["n"],
             )
             for s in result.yearly_stats
         ],
@@ -156,7 +155,7 @@ def get_trend_analysis(
         r_squared=result.r_squared,
         p_value=result.p_value,
         is_significant=result.is_significant,
-        direction=result.direction
+        direction=result.direction,
     )
 
 
@@ -178,7 +177,7 @@ def get_anomaly_analysis(
     if result is None:
         raise HTTPException(
             status_code=404,
-            detail=f"Insufficient data for anomaly detection on '{biomarker_slug}'"
+            detail=f"Insufficient data for anomaly detection on '{biomarker_slug}'",
         )
 
     return AnomalyAnalysis(
@@ -193,12 +192,12 @@ def get_anomaly_analysis(
                 date=str(a.date),
                 value=a.value,
                 z_score=a.z_score,
-                direction=a.direction
+                direction=a.direction,
             )
             for a in result.anomalies[:20]  # Limit to top 20
         ],
         total_days=result.total_days,
-        anomaly_rate=result.anomaly_rate
+        anomaly_rate=result.anomaly_rate,
     )
 
 
@@ -217,8 +216,7 @@ def get_hrv_analysis(
 
     if result is None:
         raise HTTPException(
-            status_code=404,
-            detail="Insufficient HRV data for analysis"
+            status_code=404, detail="Insufficient HRV data for analysis"
         )
 
     return HRVAnalysis(
@@ -227,7 +225,7 @@ def get_hrv_analysis(
         ci_upper_ms=result.mean_ms.ci_upper,
         n=result.mean_ms.n,
         assessment=result.assessment,
-        unit_correction_applied=result.unit_correction_applied
+        unit_correction_applied=result.unit_correction_applied,
     )
 
 
@@ -247,8 +245,7 @@ def get_spo2_analysis(
 
     if result is None:
         raise HTTPException(
-            status_code=404,
-            detail="Insufficient SpO2 data for analysis"
+            status_code=404, detail="Insufficient SpO2 data for analysis"
         )
 
     return SpO2Analysis(
@@ -260,7 +257,7 @@ def get_spo2_analysis(
         pct_below_95_ci=result.pct_below_95_ci,
         pct_below_90=result.pct_below_90,
         count_below_90=result.count_below_90,
-        assessment=result.assessment
+        assessment=result.assessment,
     )
 
 
@@ -291,7 +288,7 @@ def get_full_analysis(
                     mean=p.stats.mean,
                     ci_lower=p.stats.ci_lower,
                     ci_upper=p.stats.ci_upper,
-                    n=p.stats.n
+                    n=p.stats.n,
                 )
                 for p in circadian.hourly_patterns
             ],
@@ -300,10 +297,13 @@ def get_full_analysis(
             lowest_hr_ci=(circadian.lowest_hr.ci_lower, circadian.lowest_hr.ci_upper),
             highest_hour=circadian.highest_hour,
             highest_hr_mean=circadian.highest_hr.mean,
-            highest_hr_ci=(circadian.highest_hr.ci_lower, circadian.highest_hr.ci_upper),
+            highest_hr_ci=(
+                circadian.highest_hr.ci_lower,
+                circadian.highest_hr.ci_upper,
+            ),
             amplitude=circadian.amplitude,
             is_significant=circadian.is_significant,
-            total_samples=circadian.total_samples
+            total_samples=circadian.total_samples,
         )
         if circadian.is_significant:
             proven.append(
@@ -323,7 +323,7 @@ def get_full_analysis(
                     mean=p.stats.mean,
                     ci_lower=p.stats.ci_lower,
                     ci_upper=p.stats.ci_upper,
-                    n=p.stats.n
+                    n=p.stats.n,
                 )
                 for p in weekly.daily_patterns
             ],
@@ -332,7 +332,7 @@ def get_full_analysis(
             f_statistic=weekly.f_statistic,
             p_value=weekly.p_value,
             is_significant=weekly.is_significant,
-            total_days=weekly.total_days
+            total_days=weekly.total_days,
         )
         if weekly.is_significant:
             proven.append(
@@ -351,7 +351,7 @@ def get_full_analysis(
                     mean=s["mean"],
                     ci_lower=s["ci_lower"],
                     ci_upper=s["ci_upper"],
-                    n=s["n"]
+                    n=s["n"],
                 )
                 for s in trend.yearly_stats
             ],
@@ -360,7 +360,7 @@ def get_full_analysis(
             r_squared=trend.r_squared,
             p_value=trend.p_value,
             is_significant=trend.is_significant,
-            direction=trend.direction
+            direction=trend.direction,
         )
         if trend.is_significant:
             proven.append(
@@ -387,12 +387,12 @@ def get_full_analysis(
                     date=str(a.date),
                     value=a.value,
                     z_score=a.z_score,
-                    direction=a.direction
+                    direction=a.direction,
                 )
                 for a in anomalies.anomalies[:20]
             ],
             total_days=anomalies.total_days,
-            anomaly_rate=anomalies.anomaly_rate
+            anomaly_rate=anomalies.anomaly_rate,
         )
         if anomalies.anomalies:
             proven.append(
@@ -410,7 +410,7 @@ def get_full_analysis(
             ci_upper_ms=hrv.mean_ms.ci_upper,
             n=hrv.mean_ms.n,
             assessment=hrv.assessment,
-            unit_correction_applied=hrv.unit_correction_applied
+            unit_correction_applied=hrv.unit_correction_applied,
         )
         proven.append(
             f"HRV SDNN: {hrv.mean_ms.mean:.1f} ms "
@@ -431,7 +431,7 @@ def get_full_analysis(
             pct_below_95_ci=spo2.pct_below_95_ci,
             pct_below_90=spo2.pct_below_90,
             count_below_90=spo2.count_below_90,
-            assessment=spo2.assessment
+            assessment=spo2.assessment,
         )
         proven.append(
             f"SpO2: {spo2.mean.mean:.1f}% mean, "
@@ -439,11 +439,13 @@ def get_full_analysis(
         )
 
     # Standard unproven claims
-    unproven.extend([
-        "Causal relationships (correlation does not imply causation)",
-        "Fitness 'improvement' claims (would need controlled study)",
-        "Health predictions (this is descriptive, not predictive)"
-    ])
+    unproven.extend(
+        [
+            "Causal relationships (correlation does not imply causation)",
+            "Fitness 'improvement' claims (would need controlled study)",
+            "Health predictions (this is descriptive, not predictive)",
+        ]
+    )
 
     return FullAnalysisResult(
         circadian=circadian_result,
@@ -453,5 +455,5 @@ def get_full_analysis(
         hrv=hrv_result,
         spo2=spo2_result,
         proven_claims=proven,
-        unproven_claims=unproven
+        unproven_claims=unproven,
     )

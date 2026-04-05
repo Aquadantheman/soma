@@ -39,6 +39,7 @@ def recompute_baseline(biomarker_slug: str) -> dict:
         try:
             # Load signals for this biomarker
             from sqlalchemy import text
+
             query = text("""
                 SELECT s.recorded_at, s.value
                 FROM signals s
@@ -54,16 +55,17 @@ def recompute_baseline(biomarker_slug: str) -> dict:
                 logger.warning(
                     "insufficient_data_for_baseline",
                     biomarker=biomarker_slug,
-                    count=len(rows)
+                    count=len(rows),
                 )
                 return {
                     "status": "skipped",
                     "reason": "insufficient_data",
-                    "count": len(rows)
+                    "count": len(rows),
                 }
 
             # Convert to arrays
             import numpy as np
+
             values = np.array([row[1] for row in rows])
 
             # Compute baseline
@@ -87,17 +89,20 @@ def recompute_baseline(biomarker_slug: str) -> dict:
                     p95 = EXCLUDED.p95,
                     n_samples = EXCLUDED.n_samples
             """)
-            db.execute(upsert_query, {
-                "slug": biomarker_slug,
-                "mean": float(baseline.mean),
-                "std": float(baseline.std),
-                "p05": float(baseline.p05),
-                "p25": float(baseline.p25),
-                "p50": float(baseline.median),
-                "p75": float(baseline.p75),
-                "p95": float(baseline.p95),
-                "n_samples": len(rows)
-            })
+            db.execute(
+                upsert_query,
+                {
+                    "slug": biomarker_slug,
+                    "mean": float(baseline.mean),
+                    "std": float(baseline.std),
+                    "p05": float(baseline.p05),
+                    "p25": float(baseline.p25),
+                    "p50": float(baseline.median),
+                    "p75": float(baseline.p75),
+                    "p95": float(baseline.p95),
+                    "n_samples": len(rows),
+                },
+            )
             db.commit()
 
             # Invalidate cache
@@ -108,14 +113,14 @@ def recompute_baseline(biomarker_slug: str) -> dict:
                 "baseline_recompute_completed",
                 biomarker=biomarker_slug,
                 n_samples=len(rows),
-                duration_ms=round(duration * 1000, 2)
+                duration_ms=round(duration * 1000, 2),
             )
 
             return {
                 "status": "success",
                 "biomarker": biomarker_slug,
                 "n_samples": len(rows),
-                "duration_ms": round(duration * 1000, 2)
+                "duration_ms": round(duration * 1000, 2),
             }
 
         finally:
@@ -123,9 +128,7 @@ def recompute_baseline(biomarker_slug: str) -> dict:
 
     except Exception as e:
         logger.error(
-            "baseline_recompute_failed",
-            biomarker=biomarker_slug,
-            error=str(e)
+            "baseline_recompute_failed", biomarker=biomarker_slug, error=str(e)
         )
         raise
 
@@ -145,6 +148,7 @@ def recompute_all_baselines() -> dict:
     db = next(get_db())
     try:
         from sqlalchemy import text
+
         query = text("SELECT slug FROM biomarkers WHERE is_active = true")
         result = db.execute(query)
         biomarkers = [row[0] for row in result.fetchall()]
@@ -162,13 +166,13 @@ def recompute_all_baselines() -> dict:
     logger.info(
         "all_baselines_recompute_completed",
         count=len(biomarkers),
-        duration_ms=round(duration * 1000, 2)
+        duration_ms=round(duration * 1000, 2),
     )
 
     return {
         "status": "completed",
         "biomarkers": results,
-        "duration_ms": round(duration * 1000, 2)
+        "duration_ms": round(duration * 1000, 2),
     }
 
 
@@ -195,17 +199,11 @@ def invalidate_caches(patterns: Optional[List[str]] = None) -> dict:
 
     logger.info("caches_invalidated", patterns=patterns, total=total)
 
-    return {
-        "status": "completed",
-        "invalidated": results,
-        "total": total
-    }
+    return {"status": "completed", "invalidated": results, "total": total}
 
 
 def run_batch_analysis(
-    analysis_type: str,
-    biomarker_slugs: Optional[List[str]] = None,
-    days: int = 30
+    analysis_type: str, biomarker_slugs: Optional[List[str]] = None, days: int = 30
 ) -> dict:
     """Run batch analysis for multiple biomarkers.
 
@@ -225,7 +223,7 @@ def run_batch_analysis(
         "batch_analysis_started",
         analysis_type=analysis_type,
         biomarkers=biomarker_slugs,
-        days=days
+        days=days,
     )
 
     db = next(get_db())
@@ -262,12 +260,12 @@ def run_batch_analysis(
         "batch_analysis_completed",
         analysis_type=analysis_type,
         count=len(slugs),
-        duration_ms=round(duration * 1000, 2)
+        duration_ms=round(duration * 1000, 2),
     )
 
     return {
         "status": "completed",
         "analysis_type": analysis_type,
         "results": results,
-        "duration_ms": round(duration * 1000, 2)
+        "duration_ms": round(duration * 1000, 2),
     }

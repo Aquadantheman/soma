@@ -1,13 +1,12 @@
 """Unit tests for job queue infrastructure."""
 
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from api.jobs.queue import (
-    QueueName,
     JobStatus,
-    get_job_status,
+    QueueName,
     enqueue_job,
+    get_job_status,
 )
 
 
@@ -36,7 +35,7 @@ class TestJobStatus:
 class TestGetJobStatus:
     """Tests for job status retrieval."""
 
-    @patch('api.jobs.queue.get_connection')
+    @patch("api.jobs.queue.get_connection")
     def test_returns_unavailable_when_no_connection(self, mock_get_conn):
         """Should return unavailable status when no connection."""
         mock_get_conn.return_value = None
@@ -46,7 +45,7 @@ class TestGetJobStatus:
         assert result.job_id == "test-job-id"
         assert result.status == JobStatus.UNAVAILABLE
 
-    @patch('api.jobs.queue.get_connection')
+    @patch("api.jobs.queue.get_connection")
     def test_returns_not_found_for_missing_job(self, mock_get_conn):
         """Should return not_found for non-existent job."""
         mock_get_conn.return_value = MagicMock()
@@ -60,7 +59,7 @@ class TestGetJobStatus:
 class TestEnqueueJob:
     """Tests for job enqueueing."""
 
-    @patch('api.jobs.queue.get_queue')
+    @patch("api.jobs.queue.get_queue")
     def test_returns_none_when_queue_unavailable(self, mock_get_queue):
         """Should return None when queue is unavailable."""
         mock_get_queue.return_value = None
@@ -72,7 +71,7 @@ class TestEnqueueJob:
 
         assert result is None
 
-    @patch('api.jobs.queue.get_queue')
+    @patch("api.jobs.queue.get_queue")
     def test_enqueues_job_successfully(self, mock_get_queue):
         """Should enqueue job and return job ID."""
         mock_queue = MagicMock()
@@ -89,7 +88,7 @@ class TestEnqueueJob:
         assert result == "test-job-123"
         mock_queue.enqueue.assert_called_once()
 
-    @patch('api.jobs.queue.get_queue')
+    @patch("api.jobs.queue.get_queue")
     def test_passes_timeout_to_queue(self, mock_get_queue):
         """Should pass job_timeout to queue."""
         mock_queue = MagicMock()
@@ -106,7 +105,7 @@ class TestEnqueueJob:
         call_kwargs = mock_queue.enqueue.call_args[1]
         assert call_kwargs["job_timeout"] == 1800
 
-    @patch('api.jobs.queue.get_queue')
+    @patch("api.jobs.queue.get_queue")
     def test_selects_correct_queue(self, mock_get_queue):
         """Should use specified queue name."""
         mock_queue = MagicMock()

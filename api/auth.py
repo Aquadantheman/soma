@@ -13,14 +13,13 @@ Even for local deployments, authentication prevents accidental exposure.
 import os
 import secrets
 import hashlib
-from typing import Optional, Callable
+from typing import Optional
 from dataclasses import dataclass
 from enum import Enum
-from functools import wraps
 
 from fastapi import Request, HTTPException, Depends, Security
 from fastapi.security import APIKeyHeader, APIKeyQuery
-from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
+from starlette.status import HTTP_401_UNAUTHORIZED
 
 from .observability import get_logger
 
@@ -31,22 +30,27 @@ logger = get_logger("auth")
 # CONFIGURATION
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class AuthMode(str, Enum):
     """Authentication mode."""
-    DISABLED = "disabled"      # No auth (development only)
-    API_KEY = "api_key"        # Simple API key
-    JWT = "jwt"                # JWT tokens (future)
-    OAUTH2 = "oauth2"          # OAuth2 (future)
+
+    DISABLED = "disabled"  # No auth (development only)
+    API_KEY = "api_key"  # Simple API key
+    JWT = "jwt"  # JWT tokens (future)
+    OAUTH2 = "oauth2"  # OAuth2 (future)
 
 
 @dataclass
 class AuthConfig:
     """Authentication configuration."""
+
     mode: AuthMode = AuthMode.API_KEY
     api_key: Optional[str] = None
     api_key_header: str = "X-API-Key"
     api_key_query: str = "api_key"
-    allow_query_param: bool = False  # Query string API keys are insecure (logged, cached)
+    allow_query_param: bool = (
+        False  # Query string API keys are insecure (logged, cached)
+    )
 
     @classmethod
     def from_env(cls) -> "AuthConfig":
@@ -67,7 +71,7 @@ class AuthConfig:
             logger.warning(
                 "generated_api_key",
                 message="No SOMA_API_KEY set, generated random key",
-                key_preview=api_key[:8] + "..."
+                key_preview=api_key[:8] + "...",
             )
             # Store it so it's consistent for this session
             os.environ["SOMA_API_KEY"] = api_key
@@ -76,7 +80,8 @@ class AuthConfig:
             mode=mode,
             api_key=api_key,
             api_key_header=os.getenv("SOMA_API_KEY_HEADER", "X-API-Key"),
-            allow_query_param=os.getenv("SOMA_ALLOW_API_KEY_QUERY", "false").lower() == "true",
+            allow_query_param=os.getenv("SOMA_ALLOW_API_KEY_QUERY", "false").lower()
+            == "true",
         )
 
 
@@ -95,6 +100,7 @@ def get_auth_config() -> AuthConfig:
 # ─────────────────────────────────────────────────────────────────────────────
 # API KEY UTILITIES
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def generate_api_key(length: int = 32) -> str:
     """Generate a secure random API key."""
@@ -117,16 +123,14 @@ def verify_api_key(provided: str, stored: str) -> bool:
 
 # API Key in header
 api_key_header = APIKeyHeader(
-    name="X-API-Key",
-    auto_error=False,
-    description="API key for authentication"
+    name="X-API-Key", auto_error=False, description="API key for authentication"
 )
 
 # API Key in query parameter
 api_key_query = APIKeyQuery(
     name="api_key",
     auto_error=False,
-    description="API key in query string (not recommended for production)"
+    description="API key in query string (not recommended for production)",
 )
 
 
@@ -151,9 +155,11 @@ async def get_api_key(
 # AUTHENTICATION DEPENDENCY
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 @dataclass
 class AuthContext:
     """Authentication context passed to endpoints."""
+
     authenticated: bool
     method: str
     user_id: Optional[str] = None  # For future multi-user support
@@ -250,6 +256,7 @@ async def optional_auth(
 # ROUTE PROTECTION HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def public_routes() -> set[str]:
     """Routes that don't require authentication."""
     return {
@@ -271,6 +278,7 @@ def is_public_route(path: str) -> bool:
 # CLI HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def print_auth_info():
     """Print authentication info for CLI startup."""
     config = get_auth_config()
@@ -280,9 +288,11 @@ def print_auth_info():
         print("   Set SOMA_AUTH_MODE=api_key to enable authentication\n")
 
     elif config.mode == AuthMode.API_KEY:
-        print(f"\n🔐 API Key Authentication enabled")
+        print("\n🔐 API Key Authentication enabled")
         print(f"   Header: {config.api_key_header}")
         if config.allow_query_param:
             print(f"   Query param: {config.api_key_query} (enabled)")
         print(f"   Key: {config.api_key[:8]}...{config.api_key[-4:]}")
-        print(f"\n   Example: curl -H 'X-API-Key: {config.api_key}' http://localhost:8000/v1/status\n")
+        print(
+            f"\n   Example: curl -H 'X-API-Key: {config.api_key}' http://localhost:8000/v1/status\n"
+        )

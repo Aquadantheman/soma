@@ -15,6 +15,7 @@ from scipy import stats
 @dataclass
 class ConfidenceInterval:
     """A value with its confidence interval."""
+
     mean: float
     ci_lower: float
     ci_upper: float
@@ -34,6 +35,7 @@ class ConfidenceInterval:
 @dataclass
 class HourlyPattern:
     """Heart rate pattern for a specific hour."""
+
     hour: int
     stats: ConfidenceInterval
 
@@ -41,6 +43,7 @@ class HourlyPattern:
 @dataclass
 class CircadianResult:
     """Result of circadian rhythm analysis."""
+
     hourly_patterns: list[HourlyPattern]
     lowest_hour: int
     lowest_hr: ConfidenceInterval
@@ -54,6 +57,7 @@ class CircadianResult:
 @dataclass
 class DayOfWeekPattern:
     """Activity pattern for a specific day."""
+
     day_name: str
     day_number: int  # 0=Monday, 6=Sunday
     stats: ConfidenceInterval
@@ -62,6 +66,7 @@ class DayOfWeekPattern:
 @dataclass
 class WeeklyActivityResult:
     """Result of weekly activity pattern analysis."""
+
     daily_patterns: list[DayOfWeekPattern]
     most_active_day: str
     least_active_day: str
@@ -74,6 +79,7 @@ class WeeklyActivityResult:
 @dataclass
 class TrendResult:
     """Result of long-term trend analysis."""
+
     yearly_stats: list[dict]  # year, mean, ci_lower, ci_upper, n
     slope: float  # change per year
     slope_ci_lower: float
@@ -87,6 +93,7 @@ class TrendResult:
 @dataclass
 class AnomalyDay:
     """A statistically anomalous day."""
+
     date: date
     value: float
     z_score: float
@@ -96,6 +103,7 @@ class AnomalyDay:
 @dataclass
 class AnomalyResult:
     """Result of anomaly detection."""
+
     mean: float
     std: float
     median: float
@@ -110,6 +118,7 @@ class AnomalyResult:
 @dataclass
 class HRVResult:
     """Result of HRV analysis with corrected units."""
+
     mean_ms: ConfidenceInterval
     assessment: str  # "above_average", "normal", "below_average"
     unit_correction_applied: bool
@@ -118,6 +127,7 @@ class HRVResult:
 @dataclass
 class SpO2Result:
     """Result of SpO2 analysis."""
+
     mean: ConfidenceInterval
     pct_below_95: float
     pct_below_95_ci: tuple[float, float]
@@ -126,7 +136,9 @@ class SpO2Result:
     assessment: str
 
 
-def _confidence_interval(data: np.ndarray, confidence: float = 0.95) -> Optional[ConfidenceInterval]:
+def _confidence_interval(
+    data: np.ndarray, confidence: float = 0.95
+) -> Optional[ConfidenceInterval]:
     """Calculate confidence interval for the mean."""
     n = len(data)
     if n < 2:
@@ -135,15 +147,13 @@ def _confidence_interval(data: np.ndarray, confidence: float = 0.95) -> Optional
     se = float(stats.sem(data))
     ci = se * stats.t.ppf((1 + confidence) / 2, n - 1)
     return ConfidenceInterval(
-        mean=mean,
-        ci_lower=mean - ci,
-        ci_upper=mean + ci,
-        n=n,
-        confidence=confidence
+        mean=mean, ci_lower=mean - ci, ci_upper=mean + ci, n=n, confidence=confidence
     )
 
 
-def analyze_circadian_rhythm(df: pd.DataFrame, biomarker_slug: str = "heart_rate") -> Optional[CircadianResult]:
+def analyze_circadian_rhythm(
+    df: pd.DataFrame, biomarker_slug: str = "heart_rate"
+) -> Optional[CircadianResult]:
     """
     Analyze circadian rhythm patterns with statistical rigor.
 
@@ -184,11 +194,13 @@ def analyze_circadian_rhythm(df: pd.DataFrame, biomarker_slug: str = "heart_rate
         highest_hr=highest.stats,
         is_significant=is_significant,
         amplitude=amplitude,
-        total_samples=len(data)
+        total_samples=len(data),
     )
 
 
-def analyze_weekly_activity(df: pd.DataFrame, biomarker_slug: str = "steps") -> Optional[WeeklyActivityResult]:
+def analyze_weekly_activity(
+    df: pd.DataFrame, biomarker_slug: str = "steps"
+) -> Optional[WeeklyActivityResult]:
     """
     Analyze weekly activity patterns with ANOVA test.
 
@@ -204,7 +216,15 @@ def analyze_weekly_activity(df: pd.DataFrame, biomarker_slug: str = "steps") -> 
     # Aggregate to daily totals
     daily = data.groupby(["date", "day_of_week"])["value"].sum().reset_index()
 
-    days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    days = [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday",
+    ]
     daily_patterns = []
     groups = []
 
@@ -213,11 +233,9 @@ def analyze_weekly_activity(df: pd.DataFrame, biomarker_slug: str = "steps") -> 
         if len(day_data) >= 10:
             ci = _confidence_interval(day_data)
             if ci:
-                daily_patterns.append(DayOfWeekPattern(
-                    day_name=day_name,
-                    day_number=i,
-                    stats=ci
-                ))
+                daily_patterns.append(
+                    DayOfWeekPattern(day_name=day_name, day_number=i, stats=ci)
+                )
                 groups.append(day_data)
 
     if len(groups) < 3:
@@ -235,11 +253,13 @@ def analyze_weekly_activity(df: pd.DataFrame, biomarker_slug: str = "steps") -> 
         f_statistic=float(f_stat),
         p_value=float(p_value),
         is_significant=p_value < 0.05,
-        total_days=len(daily)
+        total_days=len(daily),
     )
 
 
-def analyze_long_term_trend(df: pd.DataFrame, biomarker_slug: str = "heart_rate_resting") -> Optional[TrendResult]:
+def analyze_long_term_trend(
+    df: pd.DataFrame, biomarker_slug: str = "heart_rate_resting"
+) -> Optional[TrendResult]:
     """
     Analyze long-term trends with linear regression.
 
@@ -257,13 +277,15 @@ def analyze_long_term_trend(df: pd.DataFrame, biomarker_slug: str = "heart_rate_
         if len(year_data) >= 10:
             ci = _confidence_interval(year_data)
             if ci:
-                yearly_stats.append({
-                    "year": int(year),
-                    "mean": ci.mean,
-                    "ci_lower": ci.ci_lower,
-                    "ci_upper": ci.ci_upper,
-                    "n": ci.n
-                })
+                yearly_stats.append(
+                    {
+                        "year": int(year),
+                        "mean": ci.mean,
+                        "ci_lower": ci.ci_lower,
+                        "ci_upper": ci.ci_upper,
+                        "n": ci.n,
+                    }
+                )
 
     if len(yearly_stats) < 2:
         return None
@@ -284,14 +306,16 @@ def analyze_long_term_trend(df: pd.DataFrame, biomarker_slug: str = "heart_rate_
         slope=float(slope),
         slope_ci_lower=float(slope - 1.96 * std_err),
         slope_ci_upper=float(slope + 1.96 * std_err),
-        r_squared=float(r_value ** 2),
+        r_squared=float(r_value**2),
         p_value=float(p_value),
         is_significant=is_significant,
-        direction=direction
+        direction=direction,
     )
 
 
-def detect_anomalies(df: pd.DataFrame, biomarker_slug: str = "heart_rate") -> Optional[AnomalyResult]:
+def detect_anomalies(
+    df: pd.DataFrame, biomarker_slug: str = "heart_rate"
+) -> Optional[AnomalyResult]:
     """
     Detect anomalous days using robust statistics (IQR method).
 
@@ -317,17 +341,21 @@ def detect_anomalies(df: pd.DataFrame, biomarker_slug: str = "heart_rate") -> Op
     threshold_low = float(q1 - 1.5 * iqr)
     threshold_high = float(q3 + 1.5 * iqr)
 
-    daily["is_anomaly"] = (daily["value"] < threshold_low) | (daily["value"] > threshold_high)
+    daily["is_anomaly"] = (daily["value"] < threshold_low) | (
+        daily["value"] > threshold_high
+    )
     daily["z_score"] = (daily["value"] - mean) / std
 
     anomalies = []
     for _, row in daily[daily["is_anomaly"]].iterrows():
-        anomalies.append(AnomalyDay(
-            date=row["date"],
-            value=float(row["value"]),
-            z_score=float(row["z_score"]),
-            direction="high" if row["value"] > threshold_high else "low"
-        ))
+        anomalies.append(
+            AnomalyDay(
+                date=row["date"],
+                value=float(row["value"]),
+                z_score=float(row["z_score"]),
+                direction="high" if row["value"] > threshold_high else "low",
+            )
+        )
 
     # Sort by absolute z-score
     anomalies.sort(key=lambda x: abs(x.z_score), reverse=True)
@@ -341,11 +369,13 @@ def detect_anomalies(df: pd.DataFrame, biomarker_slug: str = "heart_rate") -> Op
         threshold_high=threshold_high,
         anomalies=anomalies,
         total_days=len(daily),
-        anomaly_rate=len(anomalies) / len(daily)
+        anomaly_rate=len(anomalies) / len(daily),
     )
 
 
-def analyze_hrv(df: pd.DataFrame, biomarker_slug: str = "hrv_sdnn") -> Optional[HRVResult]:
+def analyze_hrv(
+    df: pd.DataFrame, biomarker_slug: str = "hrv_sdnn"
+) -> Optional[HRVResult]:
     """
     Analyze HRV with unit correction.
 
@@ -377,13 +407,13 @@ def analyze_hrv(df: pd.DataFrame, biomarker_slug: str = "hrv_sdnn") -> Optional[
         assessment = "below_average"
 
     return HRVResult(
-        mean_ms=ci,
-        assessment=assessment,
-        unit_correction_applied=unit_correction
+        mean_ms=ci, assessment=assessment, unit_correction_applied=unit_correction
     )
 
 
-def analyze_spo2(df: pd.DataFrame, biomarker_slug: str = "spo2") -> Optional[SpO2Result]:
+def analyze_spo2(
+    df: pd.DataFrame, biomarker_slug: str = "spo2"
+) -> Optional[SpO2Result]:
     """
     Analyze SpO2 with clinical thresholds.
     """
@@ -417,5 +447,5 @@ def analyze_spo2(df: pd.DataFrame, biomarker_slug: str = "spo2") -> Optional[SpO
         pct_below_95_ci=(pct_below_95 - 1.96 * se_p, pct_below_95 + 1.96 * se_p),
         pct_below_90=below_90 / n,
         count_below_90=below_90,
-        assessment=assessment
+        assessment=assessment,
     )

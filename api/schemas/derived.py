@@ -7,10 +7,10 @@ Organized into tiers by validation level and clinical utility.
 from pydantic import BaseModel
 from typing import Optional
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # TIER 1: HIGH VALUE METRICS (Clinically Validated)
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class NocturnalDipSchema(BaseModel):
     """Nocturnal heart rate dip analysis."""
@@ -76,6 +76,7 @@ class BehavioralRegularitySchema(BaseModel):
 # TIER 2: PERSONAL TRACKING METRICS
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class CardiovascularEfficiencySchema(BaseModel):
     """Activity output relative to heart rate cost."""
 
@@ -136,6 +137,7 @@ class EnergyDistributionSchema(BaseModel):
 # TIER 3: EXPERIMENTAL METRICS
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class NightRestlessnessSchema(BaseModel):
     """Activity during expected sleep hours."""
 
@@ -160,6 +162,7 @@ class PhysiologicalCoherenceSchema(BaseModel):
 # ─────────────────────────────────────────────────────────────────────────────
 # COMPLETE REPORT
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class DerivedMetricsReportSchema(BaseModel):
     """Complete derived metrics analysis."""

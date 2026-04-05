@@ -4,12 +4,13 @@ All schemas correspond to peer-reviewed, validated analyses.
 """
 
 from datetime import date
-from typing import Optional, List, Tuple
+from typing import Optional, List
 from pydantic import BaseModel, Field
 
 
 class VO2MaxMeasurementSchema(BaseModel):
     """Single VO2 Max measurement."""
+
     date: date
     value: float = Field(description="VO2 Max in mL/kg/min")
     mets: float = Field(description="Metabolic equivalents (VO2/3.5)")
@@ -17,14 +18,18 @@ class VO2MaxMeasurementSchema(BaseModel):
 
 class VO2MaxPercentileSchema(BaseModel):
     """Percentile ranking based on ACSM age/sex norms."""
+
     percentile: int = Field(description="Percentile rank (0-100)")
-    category: str = Field(description="Fitness category (Superior/Excellent/Good/Fair/Poor/Very Poor)")
+    category: str = Field(
+        description="Fitness category (Superior/Excellent/Good/Fair/Poor/Very Poor)"
+    )
     comparison_group: str = Field(description="Reference population")
     reference: str = Field(description="Scientific citation")
 
 
 class FitnessAgeSchema(BaseModel):
     """Fitness age calculation from HUNT Fitness Study."""
+
     chronological_age: int
     fitness_age: int
     difference: int = Field(description="Positive = younger than chronological age")
@@ -34,6 +39,7 @@ class FitnessAgeSchema(BaseModel):
 
 class VO2MaxTrendSchema(BaseModel):
     """Trend analysis with confidence intervals."""
+
     period_days: int
     n_measurements: int
 
@@ -56,6 +62,7 @@ class VO2MaxTrendSchema(BaseModel):
 
 class MortalityRiskSchema(BaseModel):
     """Mortality risk from Kodama et al. meta-analysis."""
+
     mets: float
     risk_category: str = Field(description="Low/Moderate/High")
     relative_risk: float = Field(description="Relative risk compared to lowest fitness")
@@ -65,6 +72,7 @@ class MortalityRiskSchema(BaseModel):
 
 class TrainingResponseSchema(BaseModel):
     """Training response assessment."""
+
     baseline_vo2: float
     current_vo2: float
     change: float
@@ -79,6 +87,7 @@ class TrainingResponseSchema(BaseModel):
 
 class CorrelationSchema(BaseModel):
     """Validated correlation with other metrics."""
+
     metric: str
     r: float = Field(description="Pearson correlation coefficient")
     p_value: float
@@ -89,6 +98,7 @@ class CorrelationSchema(BaseModel):
 
 class VO2MaxReportSchema(BaseModel):
     """Complete VO2 Max analysis report."""
+
     # Current status
     latest_measurement: VO2MaxMeasurementSchema
     percentile: Optional[VO2MaxPercentileSchema]
@@ -111,6 +121,7 @@ class VO2MaxReportSchema(BaseModel):
 
 class VO2MaxSummarySchema(BaseModel):
     """Quick summary of VO2 Max fitness status."""
+
     has_sufficient_data: bool
     n_measurements: int
     latest_value: Optional[float]

@@ -13,8 +13,7 @@ Research Context:
 - Daylight exposure correlates with sleep quality, mood, and energy
 """
 
-from typing import Optional, List
-from datetime import date
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -41,7 +40,7 @@ def _ci_to_dict(ci) -> dict:
         "ci_lower": ci.ci_lower,
         "ci_upper": ci.ci_upper,
         "n": ci.n,
-        "confidence": ci.confidence
+        "confidence": ci.confidence,
     }
 
 
@@ -53,7 +52,7 @@ def _daily_to_schema(day) -> DailyDaylightSchema:
         morning_min=day.morning_min,
         midday_min=day.midday_min,
         afternoon_min=day.afternoon_min,
-        has_morning_exposure=day.has_morning_exposure
+        has_morning_exposure=day.has_morning_exposure,
     )
 
 
@@ -82,16 +81,12 @@ def get_daylight_analysis(
     from soma.statistics.daylight import generate_daylight_report
 
     # Load daylight signals
-    daylight_df = load_signals(
-        db,
-        biomarker_slugs=["time_in_daylight"],
-        days=days
-    )
+    daylight_df = load_signals(db, biomarker_slugs=["time_in_daylight"], days=days)
 
     if daylight_df is None or len(daylight_df) < 7:
         raise HTTPException(
             status_code=404,
-            detail=f"Insufficient daylight data. Need at least 7 days, found {len(daylight_df) if daylight_df is not None else 0} records."
+            detail=f"Insufficient daylight data. Need at least 7 days, found {len(daylight_df) if daylight_df is not None else 0} records.",
         )
 
     # Load sleep data for correlations (optional)
@@ -100,14 +95,11 @@ def get_daylight_analysis(
         sleep_df = load_signals(
             db,
             biomarker_slugs=["sleep_rem", "sleep_deep", "sleep_core", "sleep_in_bed"],
-            days=days
+            days=days,
         )
 
     report = generate_daylight_report(
-        daylight_df,
-        sleep_df=sleep_df,
-        baseline_days=days,
-        trend_days=min(30, days)
+        daylight_df, sleep_df=sleep_df, baseline_days=days, trend_days=min(30, days)
     )
 
     # Convert to schema
@@ -124,7 +116,7 @@ def get_daylight_analysis(
             morning_light_mean=report.baseline.morning_light_mean,
             variability_score=report.baseline.variability_score,
             is_sufficient=report.baseline.is_sufficient,
-            consistency_score=report.baseline.consistency_score
+            consistency_score=report.baseline.consistency_score,
         )
 
     recent_days_schema = [_daily_to_schema(d) for d in report.recent_days]
@@ -139,7 +131,7 @@ def get_daylight_analysis(
             is_low=d.is_low,
             is_no_morning_light=d.is_no_morning_light,
             is_notable=d.is_notable,
-            interpretation=d.interpretation
+            interpretation=d.interpretation,
         )
 
     trend_schema = None
@@ -153,7 +145,7 @@ def get_daylight_analysis(
             r_squared=t.r_squared,
             is_significant=t.is_significant,
             direction=t.direction,
-            interpretation=t.interpretation
+            interpretation=t.interpretation,
         )
 
     correlations_schema = [
@@ -164,7 +156,7 @@ def get_daylight_analysis(
             p_value=c.p_value,
             n_pairs=c.n_pairs,
             is_significant=c.is_significant,
-            interpretation=c.interpretation
+            interpretation=c.interpretation,
         )
         for c in report.sleep_correlations
     ]
@@ -179,7 +171,7 @@ def get_daylight_analysis(
         avg_morning_min_30d=report.avg_morning_min_30d,
         pct_days_morning_light_30d=report.pct_days_morning_light_30d,
         concerns=report.concerns,
-        insights=report.insights
+        insights=report.insights,
     )
 
 
@@ -199,11 +191,7 @@ def get_daily_daylight(
     """
     from soma.statistics.daylight import compute_daily_daylight
 
-    df = load_signals(
-        db,
-        biomarker_slugs=["time_in_daylight"],
-        days=days
-    )
+    df = load_signals(db, biomarker_slugs=["time_in_daylight"], days=days)
 
     if df is None or len(df) == 0:
         return []
@@ -223,14 +211,13 @@ def get_daylight_summary(
 
     Returns a brief overview of your daylight exposure patterns.
     """
-    from soma.statistics.daylight import compute_daylight_baseline, compute_daily_daylight
+    from soma.statistics.daylight import (
+        compute_daylight_baseline,
+        compute_daily_daylight,
+    )
     import numpy as np
 
-    df = load_signals(
-        db,
-        biomarker_slugs=["time_in_daylight"],
-        days=days
-    )
+    df = load_signals(db, biomarker_slugs=["time_in_daylight"], days=days)
 
     if df is None or len(df) == 0:
         return DaylightSummary(
@@ -242,7 +229,7 @@ def get_daylight_summary(
             is_sufficient=None,
             consistency_score=None,
             top_concern=None,
-            overall_assessment="Insufficient daylight exposure data"
+            overall_assessment="Insufficient daylight exposure data",
         )
 
     daily = compute_daily_daylight(df)
@@ -258,7 +245,7 @@ def get_daylight_summary(
             is_sufficient=None,
             consistency_score=None,
             top_concern=None,
-            overall_assessment=f"Need at least 7 days, found {len(daily)}"
+            overall_assessment=f"Need at least 7 days, found {len(daily)}",
         )
 
     avg_daily = float(np.mean([d.total_min for d in daily]))
@@ -288,7 +275,7 @@ def get_daylight_summary(
         is_sufficient=baseline.is_sufficient if baseline else None,
         consistency_score=baseline.consistency_score if baseline else None,
         top_concern=concerns[0] if concerns else None,
-        overall_assessment=assessment
+        overall_assessment=assessment,
     )
 
 
@@ -306,11 +293,7 @@ def get_daylight_trend(
     """
     from soma.statistics.daylight import analyze_daylight_trend
 
-    df = load_signals(
-        db,
-        biomarker_slugs=["time_in_daylight"],
-        days=days
-    )
+    df = load_signals(db, biomarker_slugs=["time_in_daylight"], days=days)
 
     if df is None or len(df) == 0:
         raise HTTPException(status_code=404, detail="No daylight data found")
@@ -318,7 +301,9 @@ def get_daylight_trend(
     trend = analyze_daylight_trend(df, period_days=days)
 
     if trend is None:
-        raise HTTPException(status_code=404, detail="Insufficient data for trend analysis")
+        raise HTTPException(
+            status_code=404, detail="Insufficient data for trend analysis"
+        )
 
     return DaylightTrendSchema(
         period_days=trend.period_days,
@@ -328,11 +313,13 @@ def get_daylight_trend(
         r_squared=trend.r_squared,
         is_significant=trend.is_significant,
         direction=trend.direction,
-        interpretation=trend.interpretation
+        interpretation=trend.interpretation,
     )
 
 
-@router.get("/daylight/sleep-correlation", response_model=List[DaylightSleepCorrelationSchema])
+@router.get(
+    "/daylight/sleep-correlation", response_model=List[DaylightSleepCorrelationSchema]
+)
 def get_daylight_sleep_correlations(
     days: int = 90,
     db: Session = Depends(get_db),
@@ -351,16 +338,12 @@ def get_daylight_sleep_correlations(
     """
     from soma.statistics.daylight import compute_daylight_sleep_correlation
 
-    daylight_df = load_signals(
-        db,
-        biomarker_slugs=["time_in_daylight"],
-        days=days
-    )
+    daylight_df = load_signals(db, biomarker_slugs=["time_in_daylight"], days=days)
 
     sleep_df = load_signals(
         db,
         biomarker_slugs=["sleep_rem", "sleep_deep", "sleep_core", "sleep_in_bed"],
-        days=days
+        days=days,
     )
 
     if daylight_df is None or len(daylight_df) == 0:
@@ -370,20 +353,22 @@ def get_daylight_sleep_correlations(
         raise HTTPException(status_code=404, detail="No sleep data found")
 
     correlations = []
-    for metric in ['total_sleep_min', 'rem_pct', 'deep_pct', 'efficiency']:
+    for metric in ["total_sleep_min", "rem_pct", "deep_pct", "efficiency"]:
         for lag in [0, 1]:
             corr = compute_daylight_sleep_correlation(
                 daylight_df, sleep_df, metric, lag
             )
             if corr:
-                correlations.append(DaylightSleepCorrelationSchema(
-                    sleep_metric=corr.sleep_metric,
-                    lag_days=corr.lag_days,
-                    correlation=corr.correlation,
-                    p_value=corr.p_value,
-                    n_pairs=corr.n_pairs,
-                    is_significant=corr.is_significant,
-                    interpretation=corr.interpretation
-                ))
+                correlations.append(
+                    DaylightSleepCorrelationSchema(
+                        sleep_metric=corr.sleep_metric,
+                        lag_days=corr.lag_days,
+                        correlation=corr.correlation,
+                        p_value=corr.p_value,
+                        n_pairs=corr.n_pairs,
+                        is_significant=corr.is_significant,
+                        interpretation=corr.interpretation,
+                    )
+                )
 
     return correlations

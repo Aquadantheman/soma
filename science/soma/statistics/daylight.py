@@ -21,19 +21,20 @@ circadian rhythms, sleep and mood. Somnologie, 23(3), 147-156.
 
 from dataclasses import dataclass
 from datetime import date, timedelta
-from typing import Optional, List, Tuple
+from typing import Optional, List
 import pandas as pd
 import numpy as np
 from scipy import stats
-
 
 # ============================================
 # DATA CLASSES
 # ============================================
 
+
 @dataclass
 class ConfidenceInterval:
     """Value with confidence interval."""
+
     mean: float
     ci_lower: float
     ci_upper: float
@@ -44,6 +45,7 @@ class ConfidenceInterval:
 @dataclass
 class DailyDaylight:
     """Daylight metrics for a single day."""
+
     date: date
     total_min: float  # Total minutes of daylight exposure
     morning_min: float  # Minutes before 10am
@@ -55,6 +57,7 @@ class DailyDaylight:
 @dataclass
 class DaylightBaseline:
     """Personal baseline for daylight exposure."""
+
     computed_at: pd.Timestamp
     n_days: int
 
@@ -77,6 +80,7 @@ class DaylightBaseline:
 @dataclass
 class DaylightDeviation:
     """How a day's daylight deviates from personal baseline."""
+
     date: date
     total_z: float
     morning_z: float
@@ -91,6 +95,7 @@ class DaylightDeviation:
 @dataclass
 class DaylightTrend:
     """Trend analysis for daylight exposure."""
+
     period_days: int
     slope: float  # Change per day in minutes
     slope_pct: float  # Percent change over period
@@ -104,6 +109,7 @@ class DaylightTrend:
 @dataclass
 class DaylightSleepCorrelation:
     """Correlation between daylight and sleep metrics."""
+
     sleep_metric: str  # 'sleep_duration', 'rem_pct', 'deep_pct', 'efficiency'
     lag_days: int  # 0 = same night, 1 = next night
     correlation: float
@@ -116,6 +122,7 @@ class DaylightSleepCorrelation:
 @dataclass
 class DaylightReport:
     """Complete daylight analysis report."""
+
     baseline: Optional[DaylightBaseline]
     recent_days: List[DailyDaylight]
     current_deviation: Optional[DaylightDeviation]
@@ -136,7 +143,10 @@ class DaylightReport:
 # HELPER FUNCTIONS
 # ============================================
 
-def _confidence_interval(data: np.ndarray, confidence: float = 0.95) -> Optional[ConfidenceInterval]:
+
+def _confidence_interval(
+    data: np.ndarray, confidence: float = 0.95
+) -> Optional[ConfidenceInterval]:
     """Calculate confidence interval for the mean."""
     n = len(data)
     if n < 2:
@@ -145,11 +155,7 @@ def _confidence_interval(data: np.ndarray, confidence: float = 0.95) -> Optional
     se = float(stats.sem(data))
     ci = se * stats.t.ppf((1 + confidence) / 2, n - 1)
     return ConfidenceInterval(
-        mean=mean,
-        ci_lower=mean - ci,
-        ci_upper=mean + ci,
-        n=n,
-        confidence=confidence
+        mean=mean, ci_lower=mean - ci, ci_upper=mean + ci, n=n, confidence=confidence
     )
 
 
@@ -165,62 +171,65 @@ def _aggregate_daily_daylight(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         DataFrame with one row per day, columns for each time segment
     """
-    daylight_data = df[df['biomarker_slug'] == 'time_in_daylight'].copy()
+    daylight_data = df[df["biomarker_slug"] == "time_in_daylight"].copy()
 
     if len(daylight_data) == 0:
         return pd.DataFrame()
 
-    daylight_data['time'] = pd.to_datetime(daylight_data['time'], utc=True)
-    daylight_data['date'] = daylight_data['time'].dt.date
-    daylight_data['hour'] = daylight_data['time'].dt.hour
+    daylight_data["time"] = pd.to_datetime(daylight_data["time"], utc=True)
+    daylight_data["date"] = daylight_data["time"].dt.date
+    daylight_data["hour"] = daylight_data["time"].dt.hour
 
     # Categorize by time of day
-    daylight_data['segment'] = 'afternoon'
-    daylight_data.loc[daylight_data['hour'] < 10, 'segment'] = 'morning'
-    daylight_data.loc[(daylight_data['hour'] >= 10) & (daylight_data['hour'] < 14), 'segment'] = 'midday'
+    daylight_data["segment"] = "afternoon"
+    daylight_data.loc[daylight_data["hour"] < 10, "segment"] = "morning"
+    daylight_data.loc[
+        (daylight_data["hour"] >= 10) & (daylight_data["hour"] < 14), "segment"
+    ] = "midday"
 
     # Aggregate by date and segment
     daily_segments = daylight_data.pivot_table(
-        index='date',
-        columns='segment',
-        values='value',
-        aggfunc='sum',
-        fill_value=0
+        index="date", columns="segment", values="value", aggfunc="sum", fill_value=0
     )
 
     # Ensure all columns exist
-    for seg in ['morning', 'midday', 'afternoon']:
+    for seg in ["morning", "midday", "afternoon"]:
         if seg not in daily_segments.columns:
             daily_segments[seg] = 0.0
 
     daily_segments = daily_segments.reset_index()
 
     # Rename columns to add _min suffix
-    daily_segments = daily_segments.rename(columns={
-        'morning': 'morning_min',
-        'midday': 'midday_min',
-        'afternoon': 'afternoon_min'
-    })
+    daily_segments = daily_segments.rename(
+        columns={
+            "morning": "morning_min",
+            "midday": "midday_min",
+            "afternoon": "afternoon_min",
+        }
+    )
 
     # Ensure columns are in correct order
-    daily_segments = daily_segments[['date', 'morning_min', 'midday_min', 'afternoon_min']]
+    daily_segments = daily_segments[
+        ["date", "morning_min", "midday_min", "afternoon_min"]
+    ]
 
     # Total
-    daily_segments['total_min'] = (
-        daily_segments['morning_min'] +
-        daily_segments['midday_min'] +
-        daily_segments['afternoon_min']
+    daily_segments["total_min"] = (
+        daily_segments["morning_min"]
+        + daily_segments["midday_min"]
+        + daily_segments["afternoon_min"]
     )
 
     # Meaningful morning exposure (>=20 min)
-    daily_segments['has_morning_exposure'] = daily_segments['morning_min'] >= 20
+    daily_segments["has_morning_exposure"] = daily_segments["morning_min"] >= 20
 
-    return daily_segments.sort_values('date')
+    return daily_segments.sort_values("date")
 
 
 # ============================================
 # MAIN ANALYSIS FUNCTIONS
 # ============================================
+
 
 def compute_daily_daylight(df: pd.DataFrame) -> List[DailyDaylight]:
     """
@@ -239,22 +248,22 @@ def compute_daily_daylight(df: pd.DataFrame) -> List[DailyDaylight]:
 
     results = []
     for _, row in daily.iterrows():
-        results.append(DailyDaylight(
-            date=row['date'],
-            total_min=float(row['total_min']),
-            morning_min=float(row['morning_min']),
-            midday_min=float(row['midday_min']),
-            afternoon_min=float(row['afternoon_min']),
-            has_morning_exposure=bool(row['has_morning_exposure'])
-        ))
+        results.append(
+            DailyDaylight(
+                date=row["date"],
+                total_min=float(row["total_min"]),
+                morning_min=float(row["morning_min"]),
+                midday_min=float(row["midday_min"]),
+                afternoon_min=float(row["afternoon_min"]),
+                has_morning_exposure=bool(row["has_morning_exposure"]),
+            )
+        )
 
     return results
 
 
 def compute_daylight_baseline(
-    df: pd.DataFrame,
-    window_days: int = 90,
-    min_days: int = 14
+    df: pd.DataFrame, window_days: int = 90, min_days: int = 14
 ) -> Optional[DaylightBaseline]:
     """
     Compute personal baseline for daylight exposure.
@@ -273,26 +282,26 @@ def compute_daylight_baseline(
         return None
 
     # Filter to window
-    cutoff = pd.Timestamp.now(tz='UTC').date() - timedelta(days=window_days)
-    daily = daily[daily['date'] >= cutoff]
+    cutoff = pd.Timestamp.now(tz="UTC").date() - timedelta(days=window_days)
+    daily = daily[daily["date"] >= cutoff]
 
     if len(daily) < min_days:
         return None
 
     # Compute baselines
-    total_ci = _confidence_interval(daily['total_min'].values)
-    morning_ci = _confidence_interval(daily['morning_min'].values)
-    midday_ci = _confidence_interval(daily['midday_min'].values)
-    afternoon_ci = _confidence_interval(daily['afternoon_min'].values)
+    total_ci = _confidence_interval(daily["total_min"].values)
+    morning_ci = _confidence_interval(daily["morning_min"].values)
+    midday_ci = _confidence_interval(daily["midday_min"].values)
+    afternoon_ci = _confidence_interval(daily["afternoon_min"].values)
 
     if not all([total_ci, morning_ci, midday_ci, afternoon_ci]):
         return None
 
     # Percentage of days with morning light
-    pct_morning = float(daily['has_morning_exposure'].mean() * 100)
+    pct_morning = float(daily["has_morning_exposure"].mean() * 100)
 
     # Variability (coefficient of variation)
-    cv = daily['total_min'].std() / (daily['total_min'].mean() + 0.01)
+    cv = daily["total_min"].std() / (daily["total_min"].mean() + 0.01)
 
     # Consistency score (inverse of CV)
     consistency = max(0, min(100, 100 * (1 - cv)))
@@ -301,7 +310,7 @@ def compute_daylight_baseline(
     is_sufficient = total_ci.mean >= 30 and pct_morning >= 50
 
     return DaylightBaseline(
-        computed_at=pd.Timestamp.now(tz='UTC'),
+        computed_at=pd.Timestamp.now(tz="UTC"),
         n_days=len(daily),
         total_daylight=total_ci,
         morning_daylight=morning_ci,
@@ -311,17 +320,17 @@ def compute_daylight_baseline(
         morning_light_mean=morning_ci.mean,
         variability_score=float(cv),
         is_sufficient=is_sufficient,
-        consistency_score=float(consistency)
+        consistency_score=float(consistency),
     )
 
 
 def compute_daylight_deviation(
-    day: DailyDaylight,
-    baseline: DaylightBaseline
+    day: DailyDaylight, baseline: DaylightBaseline
 ) -> DaylightDeviation:
     """
     Compute how a day's daylight deviates from personal baseline.
     """
+
     def z_score(value: float, ci: ConfidenceInterval) -> float:
         std = (ci.ci_upper - ci.ci_lower) / (2 * 1.96) * np.sqrt(ci.n)
         return (value - ci.mean) / std if std > 0 else 0.0
@@ -338,7 +347,9 @@ def compute_daylight_deviation(
     if is_no_morning:
         issues.append("No morning daylight exposure today")
     if is_low:
-        issues.append(f"Total daylight ({day.total_min:.0f} min) well below your average")
+        issues.append(
+            f"Total daylight ({day.total_min:.0f} min) well below your average"
+        )
 
     if not issues:
         interpretation = "Daylight exposure within your normal range"
@@ -352,13 +363,12 @@ def compute_daylight_deviation(
         is_low=is_low,
         is_no_morning_light=is_no_morning,
         is_notable=is_notable,
-        interpretation=interpretation
+        interpretation=interpretation,
     )
 
 
 def analyze_daylight_trend(
-    df: pd.DataFrame,
-    period_days: int = 30
+    df: pd.DataFrame, period_days: int = 30
 ) -> Optional[DaylightTrend]:
     """
     Analyze trend in daylight exposure.
@@ -375,28 +385,30 @@ def analyze_daylight_trend(
     if len(daily) == 0:
         return None
 
-    cutoff = pd.Timestamp.now(tz='UTC').date() - timedelta(days=period_days)
-    daily = daily[daily['date'] >= cutoff]
+    cutoff = pd.Timestamp.now(tz="UTC").date() - timedelta(days=period_days)
+    daily = daily[daily["date"] >= cutoff]
 
     if len(daily) < 7:
         return None
 
     # Linear regression
     x = np.arange(len(daily))
-    y = daily['total_min'].values
+    y = daily["total_min"].values
 
     slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
 
     is_significant = p_value < 0.05
 
     if not is_significant:
-        direction = 'stable'
+        direction = "stable"
         interpretation = f"Daylight exposure stable over past {period_days} days"
     elif slope > 0:
-        direction = 'increasing'
-        interpretation = f"Getting more daylight (+{slope:.1f} min/day, p={p_value:.3f})"
+        direction = "increasing"
+        interpretation = (
+            f"Getting more daylight (+{slope:.1f} min/day, p={p_value:.3f})"
+        )
     else:
-        direction = 'decreasing'
+        direction = "decreasing"
         interpretation = f"Getting less daylight ({slope:.1f} min/day, p={p_value:.3f})"
 
     # Percentage change
@@ -409,18 +421,18 @@ def analyze_daylight_trend(
         slope=float(slope),
         slope_pct=float(pct_change),
         p_value=float(p_value),
-        r_squared=float(r_value ** 2),
+        r_squared=float(r_value**2),
         is_significant=is_significant,
         direction=direction,
-        interpretation=interpretation
+        interpretation=interpretation,
     )
 
 
 def compute_daylight_sleep_correlation(
     daylight_df: pd.DataFrame,
     sleep_df: pd.DataFrame,
-    sleep_metric: str = 'total_sleep_min',
-    lag_days: int = 0
+    sleep_metric: str = "total_sleep_min",
+    lag_days: int = 0,
 ) -> Optional[DaylightSleepCorrelation]:
     """
     Compute correlation between daylight exposure and sleep metric.
@@ -447,8 +459,8 @@ def compute_daylight_sleep_correlation(
         return None
 
     # Align dates
-    daily_daylight = daily_daylight.set_index('date')
-    nightly_sleep = nightly_sleep.set_index('sleep_date')
+    daily_daylight = daily_daylight.set_index("date")
+    nightly_sleep = nightly_sleep.set_index("sleep_date")
 
     # Apply lag (daylight on day N affects sleep on night N+lag)
     if lag_days > 0:
@@ -460,7 +472,7 @@ def compute_daylight_sleep_correlation(
     if len(common_dates) < 10:
         return None
 
-    daylight_values = daily_daylight.loc[common_dates, 'total_min'].values
+    daylight_values = daily_daylight.loc[common_dates, "total_min"].values
     sleep_values = nightly_sleep.loc[common_dates, sleep_metric].values
 
     # Remove NaN
@@ -477,15 +489,21 @@ def compute_daylight_sleep_correlation(
     is_significant = p_value < 0.05
 
     # Interpretation
-    metric_nice = sleep_metric.replace('_', ' ').title()
+    metric_nice = sleep_metric.replace("_", " ").title()
     lag_text = "same night" if lag_days == 0 else f"next {lag_days} night(s)"
 
     if not is_significant:
-        interpretation = f"No significant relationship between daylight and {metric_nice}"
+        interpretation = (
+            f"No significant relationship between daylight and {metric_nice}"
+        )
     elif corr > 0:
-        interpretation = f"More daylight associated with higher {metric_nice} ({lag_text})"
+        interpretation = (
+            f"More daylight associated with higher {metric_nice} ({lag_text})"
+        )
     else:
-        interpretation = f"More daylight associated with lower {metric_nice} ({lag_text})"
+        interpretation = (
+            f"More daylight associated with lower {metric_nice} ({lag_text})"
+        )
 
     return DaylightSleepCorrelation(
         sleep_metric=sleep_metric,
@@ -494,7 +512,7 @@ def compute_daylight_sleep_correlation(
         p_value=float(p_value),
         n_pairs=len(daylight_values),
         is_significant=is_significant,
-        interpretation=interpretation
+        interpretation=interpretation,
     )
 
 
@@ -502,7 +520,7 @@ def generate_daylight_report(
     daylight_df: pd.DataFrame,
     sleep_df: Optional[pd.DataFrame] = None,
     baseline_days: int = 90,
-    trend_days: int = 30
+    trend_days: int = 30,
 ) -> DaylightReport:
     """
     Generate complete daylight analysis report.
@@ -521,21 +539,23 @@ def generate_daylight_report(
 
     # Get recent days
     daily = _aggregate_daily_daylight(daylight_df)
-    recent_cutoff = pd.Timestamp.now(tz='UTC').date() - timedelta(days=trend_days)
+    recent_cutoff = pd.Timestamp.now(tz="UTC").date() - timedelta(days=trend_days)
 
     recent_days = []
     if len(daily) > 0:
-        recent_data = daily[daily['date'] >= recent_cutoff]
+        recent_data = daily[daily["date"] >= recent_cutoff]
 
         for _, row in recent_data.iterrows():
-            recent_days.append(DailyDaylight(
-                date=row['date'],
-                total_min=float(row['total_min']),
-                morning_min=float(row['morning_min']),
-                midday_min=float(row['midday_min']),
-                afternoon_min=float(row['afternoon_min']),
-                has_morning_exposure=bool(row['has_morning_exposure'])
-            ))
+            recent_days.append(
+                DailyDaylight(
+                    date=row["date"],
+                    total_min=float(row["total_min"]),
+                    morning_min=float(row["morning_min"]),
+                    midday_min=float(row["midday_min"]),
+                    afternoon_min=float(row["afternoon_min"]),
+                    has_morning_exposure=bool(row["has_morning_exposure"]),
+                )
+            )
 
     # Current deviation
     current_deviation = None
@@ -548,7 +568,7 @@ def generate_daylight_report(
     # Sleep correlations
     sleep_correlations = []
     if sleep_df is not None and len(sleep_df) > 0:
-        for metric in ['total_sleep_min', 'rem_pct', 'deep_pct', 'efficiency']:
+        for metric in ["total_sleep_min", "rem_pct", "deep_pct", "efficiency"]:
             for lag in [0, 1]:
                 corr = compute_daylight_sleep_correlation(
                     daylight_df, sleep_df, metric, lag
@@ -561,7 +581,9 @@ def generate_daylight_report(
     if recent_days:
         avg_daily = float(np.mean([d.total_min for d in recent_days]))
         avg_morning = float(np.mean([d.morning_min for d in recent_days]))
-        pct_morning = float(np.mean([d.has_morning_exposure for d in recent_days]) * 100)
+        pct_morning = float(
+            np.mean([d.has_morning_exposure for d in recent_days]) * 100
+        )
 
     # Generate concerns and insights
     concerns = []
@@ -587,13 +609,15 @@ def generate_daylight_report(
             insights.append("Meeting daylight exposure recommendations")
 
         if baseline.consistency_score >= 70:
-            insights.append(f"Consistent daylight patterns (score: {baseline.consistency_score:.0f}/100)")
+            insights.append(
+                f"Consistent daylight patterns (score: {baseline.consistency_score:.0f}/100)"
+            )
         elif baseline.consistency_score < 50:
             concerns.append("Highly variable daylight exposure day-to-day")
 
-    if trend and trend.is_significant and trend.direction == 'decreasing':
+    if trend and trend.is_significant and trend.direction == "decreasing":
         concerns.append(trend.interpretation)
-    elif trend and trend.is_significant and trend.direction == 'increasing':
+    elif trend and trend.is_significant and trend.direction == "increasing":
         insights.append(trend.interpretation)
 
     # Sleep correlation insights
@@ -613,5 +637,5 @@ def generate_daylight_report(
         avg_morning_min_30d=avg_morning,
         pct_days_morning_light_30d=pct_morning,
         concerns=concerns,
-        insights=insights
+        insights=insights,
     )

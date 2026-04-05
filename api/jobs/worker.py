@@ -21,7 +21,7 @@ def main():
         print("Install with: pip install rq redis")
         sys.exit(1)
 
-    from .queue import QueueName, get_connection
+    from .queue import QueueName
 
     # Get Redis connection
     redis_url = os.getenv("SOMA_REDIS_URL", "redis://localhost:6379/0")

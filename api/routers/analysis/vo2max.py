@@ -10,7 +10,7 @@ Provides rigorously validated analysis of VO2 Max:
 All methods cite peer-reviewed sources.
 """
 
-from typing import Optional, List
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
@@ -34,14 +34,12 @@ router = APIRouter()
 
 def _measurement_to_schema(m) -> VO2MaxMeasurementSchema:
     """Convert VO2MaxMeasurement to schema."""
-    return VO2MaxMeasurementSchema(
-        date=m.date,
-        value=m.value,
-        mets=m.mets
-    )
+    return VO2MaxMeasurementSchema(date=m.date, value=m.value, mets=m.mets)
 
 
-def _correlation_to_schema(corr_tuple, metric: str, expected: str) -> Optional[CorrelationSchema]:
+def _correlation_to_schema(
+    corr_tuple, metric: str, expected: str
+) -> Optional[CorrelationSchema]:
     """Convert correlation tuple to schema."""
     if corr_tuple is None:
         return None
@@ -52,14 +50,16 @@ def _correlation_to_schema(corr_tuple, metric: str, expected: str) -> Optional[C
         p_value=p,
         n=n,
         is_significant=p < 0.05,
-        literature_expected=expected
+        literature_expected=expected,
     )
 
 
 @router.get("/vo2max", response_model=VO2MaxReportSchema)
 def get_vo2max_analysis(
     age: Optional[int] = Query(None, description="Your age for percentile calculation"),
-    sex: Optional[str] = Query(None, description="Your sex (male/female) for percentile calculation"),
+    sex: Optional[str] = Query(
+        None, description="Your sex (male/female) for percentile calculation"
+    ),
     days: int = Query(730, description="Days of history to analyze"),
     db: Session = Depends(get_db),
     auth: AuthContext = Depends(require_auth),
@@ -80,10 +80,7 @@ def get_vo2max_analysis(
     df = load_signals(db, biomarker_slugs=["vo2_max"], days=days)
 
     if df is None or len(df) == 0:
-        raise HTTPException(
-            status_code=404,
-            detail="No VO2 Max data found"
-        )
+        raise HTTPException(status_code=404, detail="No VO2 Max data found")
 
     # Also load HRV and RHR for correlation analysis
     hrv_df = load_signals(db, biomarker_slugs=["hrv_sdnn"], days=days)
@@ -91,6 +88,7 @@ def get_vo2max_analysis(
 
     # Combine data for correlation analysis
     import pandas as pd
+
     all_data = df.copy()
     if hrv_df is not None:
         all_data = pd.concat([all_data, hrv_df], ignore_index=True)
@@ -109,7 +107,7 @@ def get_vo2max_analysis(
             percentile=report.percentile.percentile,
             category=report.percentile.category,
             comparison_group=report.percentile.comparison_group,
-            reference=report.percentile.reference
+            reference=report.percentile.reference,
         )
 
     fitness_age_schema = None
@@ -119,7 +117,7 @@ def get_vo2max_analysis(
             fitness_age=report.fitness_age.fitness_age,
             difference=report.fitness_age.difference,
             interpretation=report.fitness_age.interpretation,
-            reference=report.fitness_age.reference
+            reference=report.fitness_age.reference,
         )
 
     mortality_schema = MortalityRiskSchema(
@@ -127,7 +125,7 @@ def get_vo2max_analysis(
         risk_category=report.mortality_risk.risk_category,
         relative_risk=report.mortality_risk.relative_risk,
         interpretation=report.mortality_risk.interpretation,
-        reference=report.mortality_risk.reference
+        reference=report.mortality_risk.reference,
     )
 
     trend_schema = None
@@ -145,7 +143,7 @@ def get_vo2max_analysis(
             ci_upper=report.trend.ci_upper,
             p_value=report.trend.p_value,
             is_significant=report.trend.is_significant,
-            interpretation=report.trend.interpretation
+            interpretation=report.trend.interpretation,
         )
 
     training_response_schema = None
@@ -158,16 +156,18 @@ def get_vo2max_analysis(
             is_responder=report.training_response.is_responder,
             response_category=report.training_response.response_category,
             interpretation=report.training_response.interpretation,
-            reference=report.training_response.reference
+            reference=report.training_response.reference,
         )
 
     hrv_corr = _correlation_to_schema(
-        report.hrv_correlation, "HRV (SDNN)",
-        "Positive correlation expected (r~0.3-0.5)"
+        report.hrv_correlation,
+        "HRV (SDNN)",
+        "Positive correlation expected (r~0.3-0.5)",
     )
     rhr_corr = _correlation_to_schema(
-        report.rhr_correlation, "Resting HR",
-        "Negative correlation expected (r~-0.3 to -0.5)"
+        report.rhr_correlation,
+        "Resting HR",
+        "Negative correlation expected (r~-0.3 to -0.5)",
     )
 
     return VO2MaxReportSchema(
@@ -181,7 +181,7 @@ def get_vo2max_analysis(
         hrv_correlation=hrv_corr,
         rhr_correlation=rhr_corr,
         insights=report.insights,
-        recommendations=report.recommendations
+        recommendations=report.recommendations,
     )
 
 
@@ -196,7 +196,9 @@ def get_vo2max_summary(
     Get quick summary of VO2 Max fitness status.
     """
     from soma.statistics.vo2max import (
-        compute_percentile, compute_mortality_risk, analyze_trend
+        compute_percentile,
+        compute_mortality_risk,
+        analyze_trend,
     )
 
     df = load_signals(db, biomarker_slugs=["vo2_max"], days=730)
@@ -210,15 +212,16 @@ def get_vo2max_summary(
             category=None,
             mortality_risk=None,
             trend_direction=None,
-            overall_assessment="No VO2 Max data available"
+            overall_assessment="No VO2 Max data available",
         )
 
     import pandas as pd
-    df['time'] = pd.to_datetime(df['time'])
-    df = df.sort_values('time')
+
+    df["time"] = pd.to_datetime(df["time"])
+    df = df.sort_values("time")
 
     n = len(df)
-    latest = df.iloc[-1]['value']
+    latest = df.iloc[-1]["value"]
     latest_mets = round(latest / 3.5, 1)
 
     category = None
@@ -249,7 +252,7 @@ def get_vo2max_summary(
         category=category,
         mortality_risk=mortality_risk,
         trend_direction=trend_direction,
-        overall_assessment=assessment
+        overall_assessment=assessment,
     )
 
 
@@ -273,10 +276,11 @@ def get_vo2max_percentile(
         raise HTTPException(status_code=404, detail="No VO2 Max data found")
 
     import pandas as pd
-    df['time'] = pd.to_datetime(df['time'])
-    latest = df.sort_values('time').iloc[-1]['value']
 
-    if sex.lower() not in ['male', 'female']:
+    df["time"] = pd.to_datetime(df["time"])
+    latest = df.sort_values("time").iloc[-1]["value"]
+
+    if sex.lower() not in ["male", "female"]:
         raise HTTPException(status_code=400, detail="Sex must be 'male' or 'female'")
 
     pct = compute_percentile(latest, age, sex)
@@ -285,7 +289,7 @@ def get_vo2max_percentile(
         percentile=pct.percentile,
         category=pct.category,
         comparison_group=pct.comparison_group,
-        reference=pct.reference
+        reference=pct.reference,
     )
 
 
@@ -309,10 +313,11 @@ def get_fitness_age(
         raise HTTPException(status_code=404, detail="No VO2 Max data found")
 
     import pandas as pd
-    df['time'] = pd.to_datetime(df['time'])
-    latest = df.sort_values('time').iloc[-1]['value']
 
-    if sex.lower() not in ['male', 'female']:
+    df["time"] = pd.to_datetime(df["time"])
+    latest = df.sort_values("time").iloc[-1]["value"]
+
+    if sex.lower() not in ["male", "female"]:
         raise HTTPException(status_code=400, detail="Sex must be 'male' or 'female'")
 
     fa = compute_fitness_age(latest, age, sex)
@@ -322,7 +327,7 @@ def get_fitness_age(
         fitness_age=fa.fitness_age,
         difference=fa.difference,
         interpretation=fa.interpretation,
-        reference=fa.reference
+        reference=fa.reference,
     )
 
 
@@ -349,7 +354,7 @@ def get_vo2max_trend(
     if trend is None:
         raise HTTPException(
             status_code=404,
-            detail="Insufficient data for trend analysis (need at least 5 measurements)"
+            detail="Insufficient data for trend analysis (need at least 5 measurements)",
         )
 
     return VO2MaxTrendSchema(
@@ -365,5 +370,5 @@ def get_vo2max_trend(
         ci_upper=trend.ci_upper,
         p_value=trend.p_value,
         is_significant=trend.is_significant,
-        interpretation=trend.interpretation
+        interpretation=trend.interpretation,
     )

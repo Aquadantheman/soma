@@ -7,7 +7,6 @@ from datetime import datetime
 from typing import Any
 from .schemas import Sleep, Recovery, Cycle, Workout, BodyMeasurement
 
-
 # Mapping format: whoop_field -> (soma_biomarker_slug, conversion_factor)
 # Conversion factor is multiplied by the Whoop value to get Soma units
 
@@ -20,7 +19,6 @@ WHOOP_TO_SOMA: dict[str, tuple[str, float]] = {
     "recovery.hrv_rmssd_milli": ("hrv_rmssd", 1.0),  # already in ms
     "recovery.spo2_percentage": ("spo2", 1.0),  # percentage
     "recovery.skin_temp_celsius": ("skin_temp_delta", 1.0),  # celsius delta
-
     # ─────────────────────────────────────────────────────────────────────────
     # Sleep metrics (Whoop stores durations in milliseconds)
     # ─────────────────────────────────────────────────────────────────────────
@@ -33,7 +31,6 @@ WHOOP_TO_SOMA: dict[str, tuple[str, float]] = {
     "sleep.respiratory_rate": ("respiratory_rate", 1.0),  # breaths/min
     "sleep.sleep_consistency_percentage": ("sleep_regularity_index", 1.0),  # percentage
     "sleep.sleep_performance_percentage": ("sleep_performance", 1.0),  # percentage
-
     # ─────────────────────────────────────────────────────────────────────────
     # Cycle (daily strain) metrics
     # ─────────────────────────────────────────────────────────────────────────
@@ -41,7 +38,6 @@ WHOOP_TO_SOMA: dict[str, tuple[str, float]] = {
     "cycle.kilojoules": ("active_energy", 0.239006),  # kJ -> kcal
     "cycle.average_heart_rate": ("heart_rate", 1.0),  # bpm
     "cycle.max_heart_rate": ("heart_rate_max", 1.0),  # bpm
-
     # ─────────────────────────────────────────────────────────────────────────
     # Workout metrics
     # ─────────────────────────────────────────────────────────────────────────
@@ -51,7 +47,6 @@ WHOOP_TO_SOMA: dict[str, tuple[str, float]] = {
     "workout.kilojoules": ("active_energy", 0.239006),  # kJ -> kcal
     "workout.distance_meter": ("distance_walking_running", 1.0),  # meters
     "workout.altitude_gain_meter": ("elevation_gain", 1.0),  # meters
-
     # ─────────────────────────────────────────────────────────────────────────
     # Body measurements
     # ─────────────────────────────────────────────────────────────────────────
@@ -80,14 +75,16 @@ def transform_recovery(recovery: Recovery, timestamp: datetime) -> list[dict[str
     for whoop_key, value in mappings:
         if value is not None and whoop_key in WHOOP_TO_SOMA:
             soma_slug, factor = WHOOP_TO_SOMA[whoop_key]
-            signals.append({
-                "time": timestamp,
-                "biomarker_slug": soma_slug,
-                "value": value * factor,
-                "source_slug": "whoop",
-                "raw_source_id": f"recovery_{recovery.cycle_id}",
-                "quality": 100,
-            })
+            signals.append(
+                {
+                    "time": timestamp,
+                    "biomarker_slug": soma_slug,
+                    "value": value * factor,
+                    "source_slug": "whoop",
+                    "raw_source_id": f"recovery_{recovery.cycle_id}",
+                    "quality": 100,
+                }
+            )
 
     return signals
 
@@ -109,9 +106,18 @@ def transform_sleep(sleep: Sleep) -> list[dict[str, Any]]:
     stage_mappings = [
         ("sleep.total_in_bed_time_milli", stage_summary.get("total_in_bed_time_milli")),
         ("sleep.total_awake_time_milli", stage_summary.get("total_awake_time_milli")),
-        ("sleep.total_light_sleep_time_milli", stage_summary.get("total_light_sleep_time_milli")),
-        ("sleep.total_slow_wave_sleep_time_milli", stage_summary.get("total_slow_wave_sleep_time_milli")),
-        ("sleep.total_rem_sleep_time_milli", stage_summary.get("total_rem_sleep_time_milli")),
+        (
+            "sleep.total_light_sleep_time_milli",
+            stage_summary.get("total_light_sleep_time_milli"),
+        ),
+        (
+            "sleep.total_slow_wave_sleep_time_milli",
+            stage_summary.get("total_slow_wave_sleep_time_milli"),
+        ),
+        (
+            "sleep.total_rem_sleep_time_milli",
+            stage_summary.get("total_rem_sleep_time_milli"),
+        ),
     ]
 
     # Map score fields
@@ -125,15 +131,17 @@ def transform_sleep(sleep: Sleep) -> list[dict[str, Any]]:
     for whoop_key, value in stage_mappings + score_mappings:
         if value is not None and whoop_key in WHOOP_TO_SOMA:
             soma_slug, factor = WHOOP_TO_SOMA[whoop_key]
-            signals.append({
-                "time": timestamp,
-                "biomarker_slug": soma_slug,
-                "value": value * factor,
-                "source_slug": "whoop",
-                "raw_source_id": f"sleep_{sleep.id}",
-                "quality": 100,
-                "meta": {"nap": sleep.nap},
-            })
+            signals.append(
+                {
+                    "time": timestamp,
+                    "biomarker_slug": soma_slug,
+                    "value": value * factor,
+                    "source_slug": "whoop",
+                    "raw_source_id": f"sleep_{sleep.id}",
+                    "quality": 100,
+                    "meta": {"nap": sleep.nap},
+                }
+            )
 
     # Also record total sleep duration
     if "total_in_bed_time_milli" in stage_summary:
@@ -141,15 +149,17 @@ def transform_sleep(sleep: Sleep) -> list[dict[str, Any]]:
         awake = stage_summary.get("total_awake_time_milli", 0)
         if total_in_bed and awake is not None:
             sleep_duration_min = (total_in_bed - awake) / 60000
-            signals.append({
-                "time": timestamp,
-                "biomarker_slug": "sleep_duration",
-                "value": sleep_duration_min,
-                "source_slug": "whoop",
-                "raw_source_id": f"sleep_{sleep.id}",
-                "quality": 100,
-                "meta": {"nap": sleep.nap},
-            })
+            signals.append(
+                {
+                    "time": timestamp,
+                    "biomarker_slug": "sleep_duration",
+                    "value": sleep_duration_min,
+                    "source_slug": "whoop",
+                    "raw_source_id": f"sleep_{sleep.id}",
+                    "quality": 100,
+                    "meta": {"nap": sleep.nap},
+                }
+            )
 
     return signals
 
@@ -174,14 +184,16 @@ def transform_cycle(cycle: Cycle) -> list[dict[str, Any]]:
     for whoop_key, value in mappings:
         if value is not None and whoop_key in WHOOP_TO_SOMA:
             soma_slug, factor = WHOOP_TO_SOMA[whoop_key]
-            signals.append({
-                "time": timestamp,
-                "biomarker_slug": soma_slug,
-                "value": value * factor,
-                "source_slug": "whoop",
-                "raw_source_id": f"cycle_{cycle.id}",
-                "quality": 100,
-            })
+            signals.append(
+                {
+                    "time": timestamp,
+                    "biomarker_slug": soma_slug,
+                    "value": value * factor,
+                    "source_slug": "whoop",
+                    "raw_source_id": f"cycle_{cycle.id}",
+                    "quality": 100,
+                }
+            )
 
     return signals
 
@@ -208,20 +220,24 @@ def transform_workout(workout: Workout) -> list[dict[str, Any]]:
     for whoop_key, value in mappings:
         if value is not None and whoop_key in WHOOP_TO_SOMA:
             soma_slug, factor = WHOOP_TO_SOMA[whoop_key]
-            signals.append({
-                "time": timestamp,
-                "biomarker_slug": soma_slug,
-                "value": value * factor,
-                "source_slug": "whoop",
-                "raw_source_id": f"workout_{workout.id}",
-                "quality": 100,
-                "meta": {"sport_id": workout.sport_id},
-            })
+            signals.append(
+                {
+                    "time": timestamp,
+                    "biomarker_slug": soma_slug,
+                    "value": value * factor,
+                    "source_slug": "whoop",
+                    "raw_source_id": f"workout_{workout.id}",
+                    "quality": 100,
+                    "meta": {"sport_id": workout.sport_id},
+                }
+            )
 
     return signals
 
 
-def transform_body_measurement(body: BodyMeasurement, timestamp: datetime) -> list[dict[str, Any]]:
+def transform_body_measurement(
+    body: BodyMeasurement, timestamp: datetime
+) -> list[dict[str, Any]]:
     """Transform Whoop body measurements to Soma signals."""
     signals = []
 
@@ -234,14 +250,16 @@ def transform_body_measurement(body: BodyMeasurement, timestamp: datetime) -> li
     for whoop_key, value in mappings:
         if value is not None and whoop_key in WHOOP_TO_SOMA:
             soma_slug, factor = WHOOP_TO_SOMA[whoop_key]
-            signals.append({
-                "time": timestamp,
-                "biomarker_slug": soma_slug,
-                "value": value * factor,
-                "source_slug": "whoop",
-                "raw_source_id": "body_measurement",
-                "quality": 100,
-            })
+            signals.append(
+                {
+                    "time": timestamp,
+                    "biomarker_slug": soma_slug,
+                    "value": value * factor,
+                    "source_slug": "whoop",
+                    "raw_source_id": "body_measurement",
+                    "quality": 100,
+                }
+            )
 
     return signals
 
@@ -286,9 +304,9 @@ def transform_whoop_data(
 
     if body_measurement:
         from datetime import datetime, timezone
-        signals.extend(transform_body_measurement(
-            body_measurement,
-            datetime.now(timezone.utc)
-        ))
+
+        signals.extend(
+            transform_body_measurement(body_measurement, datetime.now(timezone.utc))
+        )
 
     return signals

@@ -33,7 +33,6 @@ import pandas as pd
 import numpy as np
 from scipy import stats
 
-
 # ============================================
 # VALIDATED REFERENCE DATA (ACSM 11th Edition)
 # ============================================
@@ -120,12 +119,12 @@ ACSM_PERCENTILES = {
 # Fitness categories (ACSM)
 # Percentile ranges for each category
 FITNESS_CATEGORIES = {
-    'Superior': (95, 100),
-    'Excellent': (80, 94),
-    'Good': (60, 79),
-    'Fair': (40, 59),
-    'Poor': (20, 39),
-    'Very Poor': (0, 19),
+    "Superior": (95, 100),
+    "Excellent": (80, 94),
+    "Good": (60, 79),
+    "Fair": (40, 59),
+    "Poor": (20, 39),
+    "Very Poor": (0, 19),
 }
 
 # MET conversion: 1 MET = 3.5 mL/kg/min
@@ -136,9 +135,11 @@ METS_CONVERSION = 3.5
 # DATA CLASSES
 # ============================================
 
+
 @dataclass
 class VO2MaxMeasurement:
     """Single VO2 Max measurement."""
+
     date: date
     value: float  # mL/kg/min
     mets: float  # Metabolic equivalents
@@ -147,6 +148,7 @@ class VO2MaxMeasurement:
 @dataclass
 class VO2MaxPercentile:
     """Percentile ranking based on age/sex norms."""
+
     percentile: int  # 0-100
     category: str  # 'Superior', 'Excellent', 'Good', 'Fair', 'Poor', 'Very Poor'
     comparison_group: str  # e.g., "males aged 30-39"
@@ -156,6 +158,7 @@ class VO2MaxPercentile:
 @dataclass
 class FitnessAge:
     """Fitness age calculation based on VO2 Max."""
+
     chronological_age: int
     fitness_age: int
     difference: int  # Positive = younger than chronological
@@ -166,6 +169,7 @@ class FitnessAge:
 @dataclass
 class VO2MaxTrend:
     """Trend analysis for VO2 Max over time."""
+
     period_days: int
     n_measurements: int
 
@@ -189,6 +193,7 @@ class VO2MaxTrend:
 @dataclass
 class MortalityRisk:
     """Mortality risk assessment based on VO2 Max."""
+
     mets: float
     risk_category: str  # 'Low', 'Moderate', 'High'
     relative_risk: float  # Compared to lowest fitness group
@@ -199,6 +204,7 @@ class MortalityRisk:
 @dataclass
 class TrainingResponse:
     """Assessment of VO2 Max response to training."""
+
     baseline_vo2: float
     current_vo2: float
     change: float
@@ -214,6 +220,7 @@ class TrainingResponse:
 @dataclass
 class VO2MaxReport:
     """Complete VO2 Max analysis report."""
+
     # Current status
     latest_measurement: VO2MaxMeasurement
     percentile: Optional[VO2MaxPercentile]
@@ -238,10 +245,9 @@ class VO2MaxReport:
 # ANALYSIS FUNCTIONS
 # ============================================
 
+
 def compute_percentile(
-    vo2_max: float,
-    age: int,
-    sex: str  # 'male' or 'female'
+    vo2_max: float, age: int, sex: str  # 'male' or 'female'
 ) -> VO2MaxPercentile:
     """
     Compute percentile ranking based on ACSM age/sex norms.
@@ -250,7 +256,7 @@ def compute_percentile(
     """
     # Find appropriate age range
     age_range = None
-    for (low, high) in ACSM_PERCENTILES.keys():
+    for low, high in ACSM_PERCENTILES.keys():
         if low <= age <= high:
             age_range = (low, high)
             break
@@ -263,7 +269,7 @@ def compute_percentile(
             age_range = (70, 79)
 
     percentiles = ACSM_PERCENTILES[age_range]
-    sex_idx = 0 if sex.lower() == 'male' else 1
+    sex_idx = 0 if sex.lower() == "male" else 1
 
     # Find percentile (interpolate between known values)
     sorted_pcts = sorted(percentiles.keys(), reverse=True)
@@ -276,7 +282,7 @@ def compute_percentile(
             break
 
     # Determine category
-    category = 'Very Poor'
+    category = "Very Poor"
     for cat, (low_pct, high_pct) in FITNESS_CATEGORIES.items():
         if low_pct <= percentile <= high_pct:
             category = cat
@@ -288,15 +294,11 @@ def compute_percentile(
         percentile=percentile,
         category=category,
         comparison_group=comparison_group,
-        reference="ACSM's Guidelines for Exercise Testing and Prescription, 11th ed. (2022)"
+        reference="ACSM's Guidelines for Exercise Testing and Prescription, 11th ed. (2022)",
     )
 
 
-def compute_fitness_age(
-    vo2_max: float,
-    chronological_age: int,
-    sex: str
-) -> FitnessAge:
+def compute_fitness_age(vo2_max: float, chronological_age: int, sex: str) -> FitnessAge:
     """
     Calculate fitness age based on VO2 Max.
 
@@ -310,7 +312,7 @@ def compute_fitness_age(
     # From population studies, average VO2 Max by age:
     # These are approximate median values from ACSM data
 
-    if sex.lower() == 'male':
+    if sex.lower() == "male":
         # Male reference: VO2max = 57.5 - 0.445 * age (simplified linear model)
         # Solving for age: age = (57.5 - vo2_max) / 0.445
         fitness_age = int((57.5 - vo2_max) / 0.445)
@@ -328,20 +330,20 @@ def compute_fitness_age(
     elif difference > 5:
         interpretation = f"Your fitness level is excellent - equivalent to someone {difference} years younger"
     elif difference > 0:
-        interpretation = f"Your fitness level is above average for your age"
+        interpretation = "Your fitness level is above average for your age"
     elif difference > -5:
-        interpretation = f"Your fitness level is average for your age"
+        interpretation = "Your fitness level is average for your age"
     elif difference > -10:
         interpretation = f"Your fitness level is below average - equivalent to someone {-difference} years older"
     else:
-        interpretation = f"Your fitness level needs significant improvement"
+        interpretation = "Your fitness level needs significant improvement"
 
     return FitnessAge(
         chronological_age=chronological_age,
         fitness_age=fitness_age,
         difference=difference,
         interpretation=interpretation,
-        reference="Nes et al. (2013). Medicine & Science in Sports & Exercise, 45(11), 2203-2210"
+        reference="Nes et al. (2013). Medicine & Science in Sports & Exercise, 45(11), 2203-2210",
     )
 
 
@@ -363,16 +365,20 @@ def compute_mortality_risk(vo2_max: float) -> MortalityRisk:
     # High fitness: >10.8 METs
 
     if mets >= 10.8:  # ~37.8 mL/kg/min
-        risk_category = 'Low'
+        risk_category = "Low"
         # High fitness group has ~50% lower mortality than low fitness
         relative_risk = 0.50
-        interpretation = "Your fitness level is associated with significantly reduced mortality risk"
+        interpretation = (
+            "Your fitness level is associated with significantly reduced mortality risk"
+        )
     elif mets >= 7.9:  # ~27.7 mL/kg/min
-        risk_category = 'Moderate'
+        risk_category = "Moderate"
         relative_risk = 0.75
-        interpretation = "Your fitness level provides moderate cardiovascular protection"
+        interpretation = (
+            "Your fitness level provides moderate cardiovascular protection"
+        )
     else:
-        risk_category = 'High'
+        risk_category = "High"
         relative_risk = 1.0
         interpretation = "Improving fitness would significantly reduce mortality risk"
 
@@ -381,33 +387,30 @@ def compute_mortality_risk(vo2_max: float) -> MortalityRisk:
         risk_category=risk_category,
         relative_risk=relative_risk,
         interpretation=interpretation,
-        reference="Kodama et al. (2009). JAMA, 301(19), 2024-2035 (meta-analysis, n=102,980)"
+        reference="Kodama et al. (2009). JAMA, 301(19), 2024-2035 (meta-analysis, n=102,980)",
     )
 
 
-def analyze_trend(
-    df: pd.DataFrame,
-    min_measurements: int = 5
-) -> Optional[VO2MaxTrend]:
+def analyze_trend(df: pd.DataFrame, min_measurements: int = 5) -> Optional[VO2MaxTrend]:
     """
     Analyze VO2 Max trend over time with confidence intervals.
 
     Uses ordinary least squares regression with 95% CIs.
     """
-    vo2_data = df[df['biomarker_slug'] == 'vo2_max'].copy()
+    vo2_data = df[df["biomarker_slug"] == "vo2_max"].copy()
 
     if len(vo2_data) < min_measurements:
         return None
 
-    vo2_data['time'] = pd.to_datetime(vo2_data['time'])
-    vo2_data = vo2_data.sort_values('time')
+    vo2_data["time"] = pd.to_datetime(vo2_data["time"])
+    vo2_data = vo2_data.sort_values("time")
 
     # Convert to days since first measurement
-    first_date = vo2_data['time'].min()
-    vo2_data['days'] = (vo2_data['time'] - first_date).dt.days
+    first_date = vo2_data["time"].min()
+    vo2_data["days"] = (vo2_data["time"] - first_date).dt.days
 
-    x = vo2_data['days'].values
-    y = vo2_data['value'].values
+    x = vo2_data["days"].values
+    y = vo2_data["value"].values
     n = len(x)
 
     # Linear regression
@@ -430,7 +433,9 @@ def analyze_trend(
     is_significant = p_value < 0.05
 
     if not is_significant:
-        interpretation = f"VO2 Max stable over {period_days} days (no significant trend)"
+        interpretation = (
+            f"VO2 Max stable over {period_days} days (no significant trend)"
+        )
     elif slope > 0:
         interpretation = f"VO2 Max improving: +{slope_annual:.1f} mL/kg/min per year (p={p_value:.3f})"
     else:
@@ -449,13 +454,12 @@ def analyze_trend(
         ci_upper=round(slope + ci_margin, 4),
         p_value=round(p_value, 4),
         is_significant=is_significant,
-        interpretation=interpretation
+        interpretation=interpretation,
     )
 
 
 def assess_training_response(
-    measurements: List[VO2MaxMeasurement],
-    baseline_days: int = 90
+    measurements: List[VO2MaxMeasurement], baseline_days: int = 90
 ) -> Optional[TrainingResponse]:
     """
     Assess VO2 Max response to training.
@@ -475,7 +479,9 @@ def assess_training_response(
 
     # Baseline: average of first N measurements or first 90 days
     baseline_cutoff = sorted_measurements[0].date + timedelta(days=baseline_days)
-    baseline_measurements = [m for m in sorted_measurements if m.date <= baseline_cutoff]
+    baseline_measurements = [
+        m for m in sorted_measurements if m.date <= baseline_cutoff
+    ]
 
     if len(baseline_measurements) < 2:
         baseline_measurements = sorted_measurements[:3]
@@ -491,16 +497,16 @@ def assess_training_response(
 
     # Categorize response
     if change_pct >= 10:
-        response_category = 'High'
+        response_category = "High"
         is_responder = True
     elif change_pct >= 5:
-        response_category = 'Moderate'
+        response_category = "Moderate"
         is_responder = True
     elif change_pct >= 3:
-        response_category = 'Low'
+        response_category = "Low"
         is_responder = True
     else:
-        response_category = 'Non-responder'
+        response_category = "Non-responder"
         is_responder = False
 
     if change_pct > 0:
@@ -518,12 +524,12 @@ def assess_training_response(
         is_responder=is_responder,
         response_category=response_category,
         interpretation=interpretation,
-        reference="Bacon et al. (2013). Sports Medicine, 43(5), 313-338"
+        reference="Bacon et al. (2013). Sports Medicine, 43(5), 313-338",
     )
 
 
 def compute_validated_correlations(
-    df: pd.DataFrame
+    df: pd.DataFrame,
 ) -> Tuple[Optional[Tuple[float, float, int]], Optional[Tuple[float, float, int]]]:
     """
     Compute correlations with HRV and RHR (validated relationships).
@@ -535,18 +541,18 @@ def compute_validated_correlations(
     hrv_corr = None
     rhr_corr = None
 
-    vo2_daily = df[df['biomarker_slug'] == 'vo2_max'].copy()
+    vo2_daily = df[df["biomarker_slug"] == "vo2_max"].copy()
     if len(vo2_daily) == 0:
         return None, None
 
-    vo2_daily['date'] = pd.to_datetime(vo2_daily['time']).dt.date
-    vo2_daily = vo2_daily.groupby('date')['value'].mean()
+    vo2_daily["date"] = pd.to_datetime(vo2_daily["time"]).dt.date
+    vo2_daily = vo2_daily.groupby("date")["value"].mean()
 
     # HRV correlation
-    hrv_daily = df[df['biomarker_slug'] == 'hrv_sdnn'].copy()
+    hrv_daily = df[df["biomarker_slug"] == "hrv_sdnn"].copy()
     if len(hrv_daily) > 0:
-        hrv_daily['date'] = pd.to_datetime(hrv_daily['time']).dt.date
-        hrv_daily = hrv_daily.groupby('date')['value'].mean()
+        hrv_daily["date"] = pd.to_datetime(hrv_daily["time"]).dt.date
+        hrv_daily = hrv_daily.groupby("date")["value"].mean()
 
         common = vo2_daily.index.intersection(hrv_daily.index)
         if len(common) >= 10:
@@ -554,10 +560,10 @@ def compute_validated_correlations(
             hrv_corr = (round(r, 3), round(p, 4), len(common))
 
     # RHR correlation
-    rhr_daily = df[df['biomarker_slug'] == 'heart_rate_resting'].copy()
+    rhr_daily = df[df["biomarker_slug"] == "heart_rate_resting"].copy()
     if len(rhr_daily) > 0:
-        rhr_daily['date'] = pd.to_datetime(rhr_daily['time']).dt.date
-        rhr_daily = rhr_daily.groupby('date')['value'].mean()
+        rhr_daily["date"] = pd.to_datetime(rhr_daily["time"]).dt.date
+        rhr_daily = rhr_daily.groupby("date")["value"].mean()
 
         common = vo2_daily.index.intersection(rhr_daily.index)
         if len(common) >= 10:
@@ -568,31 +574,31 @@ def compute_validated_correlations(
 
 
 def generate_vo2max_report(
-    df: pd.DataFrame,
-    age: Optional[int] = None,
-    sex: Optional[str] = None
+    df: pd.DataFrame, age: Optional[int] = None, sex: Optional[str] = None
 ) -> Optional[VO2MaxReport]:
     """
     Generate complete VO2 Max analysis report.
 
     All analyses use peer-reviewed, validated methods.
     """
-    vo2_data = df[df['biomarker_slug'] == 'vo2_max'].copy()
+    vo2_data = df[df["biomarker_slug"] == "vo2_max"].copy()
 
     if len(vo2_data) == 0:
         return None
 
-    vo2_data['time'] = pd.to_datetime(vo2_data['time'])
-    vo2_data = vo2_data.sort_values('time')
+    vo2_data["time"] = pd.to_datetime(vo2_data["time"])
+    vo2_data = vo2_data.sort_values("time")
 
     # Create measurements list
     measurements = []
     for _, row in vo2_data.iterrows():
-        measurements.append(VO2MaxMeasurement(
-            date=row['time'].date(),
-            value=round(row['value'], 1),
-            mets=round(row['value'] / METS_CONVERSION, 1)
-        ))
+        measurements.append(
+            VO2MaxMeasurement(
+                date=row["time"].date(),
+                value=round(row["value"], 1),
+                mets=round(row["value"] / METS_CONVERSION, 1),
+            )
+        )
 
     # Latest measurement
     latest = measurements[-1]
@@ -627,38 +633,60 @@ def generate_vo2max_report(
     insights.append(f"Current VO2 Max: {latest.value} mL/kg/min ({latest.mets} METs)")
 
     if percentile:
-        insights.append(f"Percentile: {percentile.percentile}th ({percentile.category}) among {percentile.comparison_group}")
+        insights.append(
+            f"Percentile: {percentile.percentile}th ({percentile.category}) among {percentile.comparison_group}"
+        )
 
     if fitness_age:
         if fitness_age.difference > 0:
-            insights.append(f"Fitness age: {fitness_age.fitness_age} ({fitness_age.difference} years younger than chronological age)")
+            insights.append(
+                f"Fitness age: {fitness_age.fitness_age} ({fitness_age.difference} years younger than chronological age)"
+            )
         else:
             insights.append(f"Fitness age: {fitness_age.fitness_age}")
 
-    insights.append(f"Mortality risk category: {mortality_risk.risk_category} (RR={mortality_risk.relative_risk})")
+    insights.append(
+        f"Mortality risk category: {mortality_risk.risk_category} (RR={mortality_risk.relative_risk})"
+    )
 
     if trend and trend.is_significant:
         if trend.slope > 0:
-            insights.append(f"Positive trend: +{trend.slope_annual:.1f} mL/kg/min per year")
+            insights.append(
+                f"Positive trend: +{trend.slope_annual:.1f} mL/kg/min per year"
+            )
         else:
-            insights.append(f"Declining trend: {trend.slope_annual:.1f} mL/kg/min per year")
+            insights.append(
+                f"Declining trend: {trend.slope_annual:.1f} mL/kg/min per year"
+            )
 
     if hrv_corr and hrv_corr[1] < 0.05:
-        insights.append(f"Validated HRV correlation: r={hrv_corr[0]} (literature-confirmed relationship)")
+        insights.append(
+            f"Validated HRV correlation: r={hrv_corr[0]} (literature-confirmed relationship)"
+        )
 
     # Recommendations
-    if mortality_risk.risk_category == 'High':
-        recommendations.append("Priority: Increase aerobic exercise to improve cardiovascular fitness")
-        recommendations.append("Target: 150+ minutes moderate or 75+ minutes vigorous activity per week")
+    if mortality_risk.risk_category == "High":
+        recommendations.append(
+            "Priority: Increase aerobic exercise to improve cardiovascular fitness"
+        )
+        recommendations.append(
+            "Target: 150+ minutes moderate or 75+ minutes vigorous activity per week"
+        )
 
     if percentile and percentile.percentile < 40:
-        recommendations.append("Consider structured cardio training to improve fitness percentile")
+        recommendations.append(
+            "Consider structured cardio training to improve fitness percentile"
+        )
 
     if trend and trend.is_significant and trend.slope < 0:
-        recommendations.append("Address declining fitness trend with consistent aerobic training")
+        recommendations.append(
+            "Address declining fitness trend with consistent aerobic training"
+        )
 
     if not recommendations:
-        recommendations.append("Maintain current fitness level with regular aerobic exercise")
+        recommendations.append(
+            "Maintain current fitness level with regular aerobic exercise"
+        )
 
     return VO2MaxReport(
         latest_measurement=latest,
@@ -671,5 +699,5 @@ def generate_vo2max_report(
         hrv_correlation=hrv_corr,
         rhr_correlation=rhr_corr,
         insights=insights,
-        recommendations=recommendations
+        recommendations=recommendations,
     )

@@ -1,18 +1,19 @@
 """Unit tests for sleep architecture analysis."""
 
-import pytest
-import pandas as pd
-import numpy as np
 from datetime import datetime, timedelta
 
+import numpy as np
+import pandas as pd
+import pytest
+
 from soma.statistics.sleep import (
+    NightlySleep,
+    SleepArchitectureBaseline,
+    analyze_sleep_trend,
     compute_nightly_sleep,
     compute_sleep_baseline,
     compute_sleep_deviation,
-    analyze_sleep_trend,
     generate_sleep_report,
-    NightlySleep,
-    SleepArchitectureBaseline,
 )
 
 
@@ -37,23 +38,21 @@ def make_sleep_data(n_nights: int = 30, seed: int = 42) -> pd.DataFrame:
 
         # Create records for each stage
         # Bedtime around 10pm-midnight
-        bed_time = night_date.replace(hour=22, minute=0) + timedelta(minutes=np.random.randint(0, 120))
+        bed_time = night_date.replace(hour=22, minute=0) + timedelta(
+            minutes=np.random.randint(0, 120)
+        )
 
         # Sleep stages occur throughout the night
         # For simplicity, we'll just record total durations at bed_time
         stages = [
-            ('sleep_rem', rem_min),
-            ('sleep_deep', deep_min),
-            ('sleep_core', core_min),
-            ('sleep_in_bed', in_bed_min)
+            ("sleep_rem", rem_min),
+            ("sleep_deep", deep_min),
+            ("sleep_core", core_min),
+            ("sleep_in_bed", in_bed_min),
         ]
 
         for slug, value in stages:
-            records.append({
-                'time': bed_time,
-                'biomarker_slug': slug,
-                'value': value
-            })
+            records.append({"time": bed_time, "biomarker_slug": slug, "value": value})
 
     return pd.DataFrame(records)
 
@@ -97,7 +96,7 @@ class TestComputeNightlySleep:
 
     def test_returns_empty_for_no_data(self):
         """Should return empty list for no data."""
-        df = pd.DataFrame(columns=['time', 'biomarker_slug', 'value'])
+        df = pd.DataFrame(columns=["time", "biomarker_slug", "value"])
         nights = compute_nightly_sleep(df)
         assert nights == []
 
@@ -188,7 +187,7 @@ class TestComputeSleepDeviation:
             rem_pct=8.7,  # Very low
             deep_pct=4.3,  # Very low
             core_pct=87.0,
-            efficiency=76.7
+            efficiency=76.7,
         )
 
         deviation = compute_sleep_deviation(abnormal_night, baseline)
@@ -204,10 +203,10 @@ class TestAnalyzeSleepTrend:
     def test_analyzes_trend(self):
         """Should analyze trend in sleep metric."""
         df = make_sleep_data(n_nights=60)
-        trend = analyze_sleep_trend(df, metric='rem_pct', period_days=30)
+        trend = analyze_sleep_trend(df, metric="rem_pct", period_days=30)
 
         assert trend is not None
-        assert trend.metric == 'rem_pct'
+        assert trend.metric == "rem_pct"
         assert isinstance(trend.slope, float)
         assert 0 <= trend.p_value <= 1
         assert 0 <= trend.r_squared <= 1
@@ -215,15 +214,21 @@ class TestAnalyzeSleepTrend:
     def test_detects_direction(self):
         """Should detect trend direction."""
         df = make_sleep_data(n_nights=60)
-        trend = analyze_sleep_trend(df, metric='efficiency', period_days=30)
+        trend = analyze_sleep_trend(df, metric="efficiency", period_days=30)
 
         assert trend is not None
-        assert trend.direction in ['improving', 'declining', 'stable', 'increasing', 'decreasing']
+        assert trend.direction in [
+            "improving",
+            "declining",
+            "stable",
+            "increasing",
+            "decreasing",
+        ]
 
     def test_returns_none_with_insufficient_data(self):
         """Should return None with insufficient data."""
         df = make_sleep_data(n_nights=5)
-        trend = analyze_sleep_trend(df, metric='rem_pct', period_days=30)
+        trend = analyze_sleep_trend(df, metric="rem_pct", period_days=30)
         assert trend is None
 
 
@@ -259,7 +264,7 @@ class TestGenerateSleepReport:
 
     def test_handles_insufficient_data(self):
         """Should handle case with no data gracefully."""
-        df = pd.DataFrame(columns=['time', 'biomarker_slug', 'value'])
+        df = pd.DataFrame(columns=["time", "biomarker_slug", "value"])
         report = generate_sleep_report(df)
 
         assert report is not None

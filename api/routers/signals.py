@@ -197,7 +197,9 @@ def get_signal_range(
 ) -> dict:
     """Get the time range of available signal data."""
     result = db.execute(
-        text("SELECT MIN(time) as earliest, MAX(time) as latest, COUNT(*) as total FROM signals")
+        text(
+            "SELECT MIN(time) as earliest, MAX(time) as latest, COUNT(*) as total FROM signals"
+        )
     )
     row = result.mappings().first()
     return dict(row) if row else {"earliest": None, "latest": None, "total": 0}

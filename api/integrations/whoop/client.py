@@ -5,7 +5,7 @@ Handles OAuth2 token management and API requests to Whoop's REST API.
 
 import asyncio
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from typing import Optional
 from urllib.parse import urlencode
 
@@ -96,14 +96,18 @@ class WhoopClient:
     @property
     def http(self) -> httpx.AsyncClient:
         if self._http_client is None:
-            raise RuntimeError("Client not initialized. Use 'async with' context manager.")
+            raise RuntimeError(
+                "Client not initialized. Use 'async with' context manager."
+            )
         return self._http_client
 
     # ─────────────────────────────────────────────────────────────────────────
     # OAuth2 Flow
     # ─────────────────────────────────────────────────────────────────────────
 
-    def get_authorization_url(self, state: str, scopes: Optional[list[str]] = None) -> str:
+    def get_authorization_url(
+        self, state: str, scopes: Optional[list[str]] = None
+    ) -> str:
         """Generate OAuth2 authorization URL.
 
         Args:
@@ -210,16 +214,24 @@ class WhoopClient:
                 raise WhoopRateLimitError()
 
             retry_after = int(response.headers.get("Retry-After", 60))
-            wait_time = min(retry_after, 2 ** retry_count * 30)  # Exponential backoff, max from header
-            logger.warning(f"Rate limited. Waiting {wait_time}s before retry {retry_count + 1}")
+            wait_time = min(
+                retry_after, 2**retry_count * 30
+            )  # Exponential backoff, max from header
+            logger.warning(
+                f"Rate limited. Waiting {wait_time}s before retry {retry_count + 1}"
+            )
             await asyncio.sleep(wait_time)
-            return await self._request(method, endpoint, params, retry_count + 1, max_retries)
+            return await self._request(
+                method, endpoint, params, retry_count + 1, max_retries
+            )
 
         # Handle expired token
         if response.status_code == 401 and self.refresh_token and retry_count == 0:
             logger.info("Access token expired. Refreshing...")
             await self.refresh_access_token()
-            return await self._request(method, endpoint, params, retry_count + 1, max_retries)
+            return await self._request(
+                method, endpoint, params, retry_count + 1, max_retries
+            )
 
         if response.status_code >= 400:
             raise WhoopAPIError(response.status_code, response.text)

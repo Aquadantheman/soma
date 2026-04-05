@@ -21,24 +21,25 @@ from typing import Optional
 @dataclass
 class HRVFeatures:
     """Computed HRV features for a measurement window."""
+
     window_start: pd.Timestamp
     window_end: pd.Timestamp
 
     # Time domain
-    rmssd: Optional[float] = None       # ms — primary parasympathetic marker
-    sdnn: Optional[float] = None        # ms — overall variability
-    pnn50: Optional[float] = None       # % — high-frequency marker
-    mean_hr: Optional[float] = None     # bpm
-    mean_rr: Optional[float] = None     # ms
+    rmssd: Optional[float] = None  # ms — primary parasympathetic marker
+    sdnn: Optional[float] = None  # ms — overall variability
+    pnn50: Optional[float] = None  # % — high-frequency marker
+    mean_hr: Optional[float] = None  # bpm
+    mean_rr: Optional[float] = None  # ms
 
     # Frequency domain (requires RR series, not just RMSSD)
-    lf_power: Optional[float] = None    # ms² — sympathetic + parasympathetic
-    hf_power: Optional[float] = None    # ms² — parasympathetic
-    lf_hf_ratio: Optional[float] = None # sympathovagal balance
+    lf_power: Optional[float] = None  # ms² — sympathetic + parasympathetic
+    hf_power: Optional[float] = None  # ms² — parasympathetic
+    lf_hf_ratio: Optional[float] = None  # sympathovagal balance
 
     # Nonlinear
-    sd1: Optional[float] = None         # Poincaré plot short-term variability
-    sd2: Optional[float] = None         # Poincaré plot long-term variability
+    sd1: Optional[float] = None  # Poincaré plot short-term variability
+    sd2: Optional[float] = None  # Poincaré plot long-term variability
 
     # Quality
     sample_count: int = 0
@@ -63,7 +64,7 @@ def compute_rmssd(rr_intervals_ms: np.ndarray) -> float:
         raise ValueError("Need at least 2 RR intervals to compute RMSSD")
 
     successive_diffs = np.diff(rr_intervals_ms)
-    return float(np.sqrt(np.mean(successive_diffs ** 2)))
+    return float(np.sqrt(np.mean(successive_diffs**2)))
 
 
 def compute_sdnn(rr_intervals_ms: np.ndarray) -> float:
@@ -91,10 +92,12 @@ def compute_poincare(rr_intervals_ms: np.ndarray) -> tuple[float, float]:
     return sd1, sd2
 
 
-def quality_filter_rr(rr_intervals_ms: np.ndarray, 
-                       min_ms: float = 300, 
-                       max_ms: float = 2000,
-                       max_change_pct: float = 0.20) -> tuple[np.ndarray, float]:
+def quality_filter_rr(
+    rr_intervals_ms: np.ndarray,
+    min_ms: float = 300,
+    max_ms: float = 2000,
+    max_change_pct: float = 0.20,
+) -> tuple[np.ndarray, float]:
     """
     Filter physiologically implausible RR intervals.
 
@@ -164,12 +167,16 @@ def daily_hrv_summary(signals_df: pd.DataFrame) -> pd.DataFrame:
     hrv_data = signals_df[signals_df["biomarker_slug"] == "hrv_rmssd"].copy()
     hrv_data["date"] = pd.to_datetime(hrv_data["time"]).dt.date
 
-    daily = hrv_data.groupby("date")["value"].agg(
-        rmssd_mean="mean",
-        rmssd_std="std",
-        rmssd_min="min",
-        rmssd_max="max",
-        sample_count="count",
-    ).reset_index()
+    daily = (
+        hrv_data.groupby("date")["value"]
+        .agg(
+            rmssd_mean="mean",
+            rmssd_std="std",
+            rmssd_min="min",
+            rmssd_max="max",
+            sample_count="count",
+        )
+        .reset_index()
+    )
 
     return daily

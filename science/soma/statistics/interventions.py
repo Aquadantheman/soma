@@ -12,13 +12,12 @@ This module answers: "Did this intervention actually work FOR ME?"
 with statistical confidence and honest uncertainty quantification.
 """
 
-from dataclasses import dataclass, field
-from datetime import datetime, date, timedelta
+from dataclasses import dataclass
+from datetime import datetime, date
 from typing import Optional, Literal
 import numpy as np
 import pandas as pd
 from scipy import stats
-
 
 # =============================================================================
 # BIOMARKER HEALTH DIRECTION
@@ -26,12 +25,16 @@ from scipy import stats
 
 # Biomarkers where LOWER values are better (e.g., resting HR, stress)
 LOWER_IS_BETTER = {
-    'resting_hr', 'resting_heart_rate',
-    'stress_score', 'stress_index',
-    'respiratory_rate',
-    'blood_pressure_systolic', 'blood_pressure_diastolic',
-    'body_fat_percentage', 'bmi',
-    'night_restlessness',
+    "resting_hr",
+    "resting_heart_rate",
+    "stress_score",
+    "stress_index",
+    "respiratory_rate",
+    "blood_pressure_systolic",
+    "blood_pressure_diastolic",
+    "body_fat_percentage",
+    "bmi",
+    "night_restlessness",
 }
 
 # All other biomarkers default to "higher is better" (HRV, VO2max, sleep duration, etc.)
@@ -49,22 +52,30 @@ def _is_health_improvement(biomarker: str, direction: str) -> bool:
     """
     lower_is_better = biomarker.lower() in LOWER_IS_BETTER
     if lower_is_better:
-        return direction == 'decreased'
-    return direction == 'increased'
+        return direction == "decreased"
+    return direction == "increased"
 
 
 # =============================================================================
 # DATA STRUCTURES
 # =============================================================================
 
+
 @dataclass
 class Intervention:
     """A logged lifestyle intervention/change."""
+
     name: str  # e.g., "Started morning meditation"
     start_date: date
     category: Literal[
-        'sleep', 'exercise', 'nutrition', 'stress',
-        'supplement', 'medication', 'habit', 'other'
+        "sleep",
+        "exercise",
+        "nutrition",
+        "stress",
+        "supplement",
+        "medication",
+        "habit",
+        "other",
     ]
     description: Optional[str] = None
     end_date: Optional[date] = None  # None = ongoing
@@ -86,6 +97,7 @@ class Intervention:
 @dataclass
 class BiomarkerChange:
     """Statistical change in a single biomarker."""
+
     biomarker: str
 
     # Before period statistics
@@ -102,7 +114,7 @@ class BiomarkerChange:
 
     # Change metrics
     absolute_change: float  # after_mean - before_mean
-    percent_change: float   # (after - before) / before * 100
+    percent_change: float  # (after - before) / before * 100
 
     # Statistical tests
     t_statistic: float
@@ -112,7 +124,7 @@ class BiomarkerChange:
 
     # Effect size
     cohens_d: float
-    effect_size_interpretation: Literal['negligible', 'small', 'medium', 'large']
+    effect_size_interpretation: Literal["negligible", "small", "medium", "large"]
 
     # Confidence interval for the change
     change_ci_lower: float
@@ -120,9 +132,9 @@ class BiomarkerChange:
     confidence_level: float  # e.g., 0.95
 
     # Direction and significance
-    direction: Literal['increased', 'decreased', 'unchanged']
+    direction: Literal["increased", "decreased", "unchanged"]
     is_significant: bool  # p < 0.05
-    is_meaningful: bool   # significant AND effect size >= small
+    is_meaningful: bool  # significant AND effect size >= small
 
     @property
     def summary(self) -> str:
@@ -140,6 +152,7 @@ class BiomarkerChange:
 @dataclass
 class TrendAnalysis:
     """Analysis of pre-existing trends to control for confounds."""
+
     biomarker: str
 
     # Pre-intervention trend
@@ -165,6 +178,7 @@ class TrendAnalysis:
 @dataclass
 class SeasonalityControl:
     """Control for seasonal confounds."""
+
     biomarker: str
 
     # Seasonal pattern detected?
@@ -184,6 +198,7 @@ class SeasonalityControl:
 @dataclass
 class InterventionImpact:
     """Complete impact analysis for one intervention on one biomarker."""
+
     intervention: Intervention
     biomarker: str
 
@@ -196,14 +211,14 @@ class InterventionImpact:
 
     # Overall assessment
     verdict: Literal[
-        'strong_positive',   # Significant, meaningful, robust to confounds
-        'moderate_positive', # Significant, some confound concerns
-        'weak_positive',     # Trending positive but not significant
-        'no_effect',         # No detectable change
-        'weak_negative',     # Trending negative
-        'moderate_negative', # Significant negative
-        'strong_negative',   # Significant, meaningful negative
-        'inconclusive'       # Not enough data or conflicting signals
+        "strong_positive",  # Significant, meaningful, robust to confounds
+        "moderate_positive",  # Significant, some confound concerns
+        "weak_positive",  # Trending positive but not significant
+        "no_effect",  # No detectable change
+        "weak_negative",  # Trending negative
+        "moderate_negative",  # Significant negative
+        "strong_negative",  # Significant, meaningful negative
+        "inconclusive",  # Not enough data or conflicting signals
     ]
 
     confidence_score: float  # 0-100, overall confidence in verdict
@@ -220,6 +235,7 @@ class InterventionImpact:
 @dataclass
 class InterventionReport:
     """Complete report for an intervention across all biomarkers."""
+
     intervention: Intervention
     analysis_date: datetime
 
@@ -239,13 +255,13 @@ class InterventionReport:
 
     # Overall verdict
     overall_verdict: Literal[
-        'highly_effective',
-        'moderately_effective',
-        'slightly_effective',
-        'no_clear_effect',
-        'slightly_harmful',
-        'harmful',
-        'insufficient_data'
+        "highly_effective",
+        "moderately_effective",
+        "slightly_effective",
+        "no_clear_effect",
+        "slightly_harmful",
+        "harmful",
+        "insufficient_data",
     ]
 
     overall_confidence: float  # 0-100
@@ -264,6 +280,7 @@ class InterventionReport:
 # =============================================================================
 # STATISTICAL FUNCTIONS
 # =============================================================================
+
 
 def compute_cohens_d(group1: np.ndarray, group2: np.ndarray) -> tuple[float, str]:
     """Compute Cohen's d effect size with interpretation.
@@ -286,28 +303,26 @@ def compute_cohens_d(group1: np.ndarray, group2: np.ndarray) -> tuple[float, str
     pooled_std = np.sqrt(((n1 - 1) * var1 + (n2 - 1) * var2) / (n1 + n2 - 2))
 
     if pooled_std == 0:
-        return 0.0, 'negligible'
+        return 0.0, "negligible"
 
     d = (np.mean(group2) - np.mean(group1)) / pooled_std
 
     # Interpretation
     abs_d = abs(d)
     if abs_d < 0.2:
-        interpretation = 'negligible'
+        interpretation = "negligible"
     elif abs_d < 0.5:
-        interpretation = 'small'
+        interpretation = "small"
     elif abs_d < 0.8:
-        interpretation = 'medium'
+        interpretation = "medium"
     else:
-        interpretation = 'large'
+        interpretation = "large"
 
     return d, interpretation
 
 
 def compute_change_confidence_interval(
-    before: np.ndarray,
-    after: np.ndarray,
-    confidence: float = 0.95
+    before: np.ndarray, after: np.ndarray, confidence: float = 0.95
 ) -> tuple[float, float, float]:
     """Compute confidence interval for the difference in means.
 
@@ -324,16 +339,16 @@ def compute_change_confidence_interval(
     diff = mean2 - mean1
 
     # Standard error of difference (Welch-Satterthwaite)
-    se = np.sqrt(var1/n1 + var2/n2)
+    se = np.sqrt(var1 / n1 + var2 / n2)
 
     # Degrees of freedom (Welch-Satterthwaite approximation)
-    num = (var1/n1 + var2/n2)**2
-    denom = (var1/n1)**2/(n1-1) + (var2/n2)**2/(n2-1)
+    num = (var1 / n1 + var2 / n2) ** 2
+    denom = (var1 / n1) ** 2 / (n1 - 1) + (var2 / n2) ** 2 / (n2 - 1)
     df = num / denom if denom > 0 else min(n1, n2) - 1
 
     # Critical value
     alpha = 1 - confidence
-    t_crit = stats.t.ppf(1 - alpha/2, df)
+    t_crit = stats.t.ppf(1 - alpha / 2, df)
 
     # Confidence interval
     margin = t_crit * se
@@ -342,8 +357,7 @@ def compute_change_confidence_interval(
 
 
 def analyze_trend(
-    data: pd.Series,
-    date_index: pd.DatetimeIndex
+    data: pd.Series, date_index: pd.DatetimeIndex
 ) -> tuple[float, float, bool]:
     """Analyze linear trend in time series.
 
@@ -376,7 +390,7 @@ def detect_level_jump(
     after: np.ndarray,
     before_dates: np.ndarray,
     after_dates: np.ndarray,
-    intervention_date: date
+    intervention_date: date,
 ) -> tuple[float, float, bool]:
     """Detect immediate level jump at intervention point using regression discontinuity.
 
@@ -390,15 +404,23 @@ def detect_level_jump(
         return 0.0, 1.0, False
 
     # Fit before trend
-    before_days = (before_dates - before_dates.min()).astype('timedelta64[D]').astype(float)
+    before_days = (
+        (before_dates - before_dates.min()).astype("timedelta64[D]").astype(float)
+    )
     slope_b, intercept_b, _, _, _ = stats.linregress(before_days, before)
 
     # Fit after trend
-    after_days = (after_dates - after_dates.min()).astype('timedelta64[D]').astype(float)
+    after_days = (
+        (after_dates - after_dates.min()).astype("timedelta64[D]").astype(float)
+    )
     slope_a, intercept_a, _, _, _ = stats.linregress(after_days, after)
 
     # Extrapolate before to intervention point
-    days_to_intervention = (np.datetime64(intervention_date) - before_dates.min()).astype('timedelta64[D]').astype(float)
+    days_to_intervention = (
+        (np.datetime64(intervention_date) - before_dates.min())
+        .astype("timedelta64[D]")
+        .astype(float)
+    )
     predicted_before = intercept_b + slope_b * days_to_intervention
 
     # After value at intervention point (intercept of after regression)
@@ -413,7 +435,7 @@ def detect_level_jump(
         return jump, 1.0, False
 
     # Z-test for jump significance
-    se = combined_std * np.sqrt(1/len(before) + 1/len(after))
+    se = combined_std * np.sqrt(1 / len(before) + 1 / len(after))
     z = jump / se
     p_value = 2 * (1 - stats.norm.cdf(abs(z)))
 
@@ -425,7 +447,7 @@ def analyze_seasonality(
     dates: pd.DatetimeIndex,
     intervention_date: date,
     before_period_days: int,
-    after_period_days: int
+    after_period_days: int,
 ) -> Optional[SeasonalityControl]:
     """Analyze and control for seasonal effects.
 
@@ -435,8 +457,8 @@ def analyze_seasonality(
         return None
 
     # Group by month
-    df = pd.DataFrame({'value': data, 'month': dates.month})
-    monthly_means = df.groupby('month')['value'].mean()
+    df = pd.DataFrame({"value": data, "month": dates.month})
+    monthly_means = df.groupby("month")["value"].mean()
 
     # Check for significant seasonal variation
     if len(monthly_means) < 12:
@@ -451,14 +473,14 @@ def analyze_seasonality(
 
     if not has_pattern:
         return SeasonalityControl(
-            biomarker=data.name if hasattr(data, 'name') else 'unknown',
+            biomarker=data.name if hasattr(data, "name") else "unknown",
             has_seasonal_pattern=False,
             seasonal_amplitude=amplitude,
             peak_month=None,
             raw_change=0,
             seasonally_adjusted_change=0,
             seasonal_contribution=0,
-            robust_to_seasonal=True
+            robust_to_seasonal=True,
         )
 
     peak_month = int(monthly_means.idxmax())
@@ -469,11 +491,11 @@ def analyze_seasonality(
     after_end = intervention_dt + pd.Timedelta(days=after_period_days)
 
     # Expected seasonal value for before period
-    before_months = pd.date_range(before_start, intervention_dt, freq='D').month
+    before_months = pd.date_range(before_start, intervention_dt, freq="D").month
     expected_before = monthly_means[before_months].mean()
 
     # Expected seasonal value for after period
-    after_months = pd.date_range(intervention_dt, after_end, freq='D').month
+    after_months = pd.date_range(intervention_dt, after_end, freq="D").month
     expected_after = monthly_means[after_months].mean()
 
     # Seasonal contribution to observed change
@@ -483,23 +505,29 @@ def analyze_seasonality(
     before_mask = (dates >= before_start) & (dates < intervention_dt)
     after_mask = (dates >= intervention_dt) & (dates <= after_end)
 
-    raw_change = data[after_mask].mean() - data[before_mask].mean() if after_mask.any() and before_mask.any() else 0
+    raw_change = (
+        data[after_mask].mean() - data[before_mask].mean()
+        if after_mask.any() and before_mask.any()
+        else 0
+    )
 
     # Adjusted change
     adjusted_change = raw_change - seasonal_effect
 
     # Is the effect robust?
-    robust = abs(adjusted_change) >= abs(raw_change) * 0.5  # At least 50% remains after adjustment
+    robust = (
+        abs(adjusted_change) >= abs(raw_change) * 0.5
+    )  # At least 50% remains after adjustment
 
     return SeasonalityControl(
-        biomarker=data.name if hasattr(data, 'name') else 'unknown',
+        biomarker=data.name if hasattr(data, "name") else "unknown",
         has_seasonal_pattern=True,
         seasonal_amplitude=amplitude,
         peak_month=peak_month,
         raw_change=raw_change,
         seasonally_adjusted_change=adjusted_change,
         seasonal_contribution=seasonal_effect,
-        robust_to_seasonal=robust
+        robust_to_seasonal=robust,
     )
 
 
@@ -507,11 +535,12 @@ def analyze_seasonality(
 # MAIN ANALYSIS FUNCTIONS
 # =============================================================================
 
+
 def analyze_biomarker_change(
     biomarker: str,
     before_data: np.ndarray,
     after_data: np.ndarray,
-    confidence_level: float = 0.95
+    confidence_level: float = 0.95,
 ) -> BiomarkerChange:
     """Analyze the change in a single biomarker before vs after intervention.
 
@@ -539,19 +568,41 @@ def analyze_biomarker_change(
         # Insufficient data - return empty result
         return BiomarkerChange(
             biomarker=biomarker,
-            before_mean=np.nan, before_std=np.nan, before_median=np.nan, before_n=len(before),
-            after_mean=np.nan, after_std=np.nan, after_median=np.nan, after_n=len(after),
-            absolute_change=np.nan, percent_change=np.nan,
-            t_statistic=np.nan, t_pvalue=1.0,
-            mann_whitney_statistic=np.nan, mann_whitney_pvalue=1.0,
-            cohens_d=0.0, effect_size_interpretation='negligible',
-            change_ci_lower=np.nan, change_ci_upper=np.nan, confidence_level=confidence_level,
-            direction='unchanged', is_significant=False, is_meaningful=False
+            before_mean=np.nan,
+            before_std=np.nan,
+            before_median=np.nan,
+            before_n=len(before),
+            after_mean=np.nan,
+            after_std=np.nan,
+            after_median=np.nan,
+            after_n=len(after),
+            absolute_change=np.nan,
+            percent_change=np.nan,
+            t_statistic=np.nan,
+            t_pvalue=1.0,
+            mann_whitney_statistic=np.nan,
+            mann_whitney_pvalue=1.0,
+            cohens_d=0.0,
+            effect_size_interpretation="negligible",
+            change_ci_lower=np.nan,
+            change_ci_upper=np.nan,
+            confidence_level=confidence_level,
+            direction="unchanged",
+            is_significant=False,
+            is_meaningful=False,
         )
 
     # Descriptive statistics
-    before_mean, before_std, before_median = np.mean(before), np.std(before, ddof=1), np.median(before)
-    after_mean, after_std, after_median = np.mean(after), np.std(after, ddof=1), np.median(after)
+    before_mean, before_std, before_median = (
+        np.mean(before),
+        np.std(before, ddof=1),
+        np.median(before),
+    )
+    after_mean, after_std, after_median = (
+        np.mean(after),
+        np.std(after, ddof=1),
+        np.median(after),
+    )
 
     # Change metrics
     absolute_change = after_mean - before_mean
@@ -562,7 +613,7 @@ def analyze_biomarker_change(
 
     # Mann-Whitney U test (non-parametric)
     try:
-        mw_stat, mw_pvalue = stats.mannwhitneyu(after, before, alternative='two-sided')
+        mw_stat, mw_pvalue = stats.mannwhitneyu(after, before, alternative="two-sided")
     except ValueError:
         mw_stat, mw_pvalue = np.nan, 1.0
 
@@ -570,15 +621,17 @@ def analyze_biomarker_change(
     cohens_d, effect_interp = compute_cohens_d(before, after)
 
     # Confidence interval
-    ci_lower, ci_upper, _ = compute_change_confidence_interval(before, after, confidence_level)
+    ci_lower, ci_upper, _ = compute_change_confidence_interval(
+        before, after, confidence_level
+    )
 
     # Direction
     if absolute_change > 0 and t_pvalue < 0.05:
-        direction = 'increased'
+        direction = "increased"
     elif absolute_change < 0 and t_pvalue < 0.05:
-        direction = 'decreased'
+        direction = "decreased"
     else:
-        direction = 'unchanged'
+        direction = "unchanged"
 
     # Significance and meaningfulness
     is_significant = t_pvalue < 0.05
@@ -586,14 +639,28 @@ def analyze_biomarker_change(
 
     return BiomarkerChange(
         biomarker=biomarker,
-        before_mean=before_mean, before_std=before_std, before_median=before_median, before_n=len(before),
-        after_mean=after_mean, after_std=after_std, after_median=after_median, after_n=len(after),
-        absolute_change=absolute_change, percent_change=percent_change,
-        t_statistic=t_stat, t_pvalue=t_pvalue,
-        mann_whitney_statistic=mw_stat, mann_whitney_pvalue=mw_pvalue,
-        cohens_d=cohens_d, effect_size_interpretation=effect_interp,
-        change_ci_lower=ci_lower, change_ci_upper=ci_upper, confidence_level=confidence_level,
-        direction=direction, is_significant=is_significant, is_meaningful=is_meaningful
+        before_mean=before_mean,
+        before_std=before_std,
+        before_median=before_median,
+        before_n=len(before),
+        after_mean=after_mean,
+        after_std=after_std,
+        after_median=after_median,
+        after_n=len(after),
+        absolute_change=absolute_change,
+        percent_change=percent_change,
+        t_statistic=t_stat,
+        t_pvalue=t_pvalue,
+        mann_whitney_statistic=mw_stat,
+        mann_whitney_pvalue=mw_pvalue,
+        cohens_d=cohens_d,
+        effect_size_interpretation=effect_interp,
+        change_ci_lower=ci_lower,
+        change_ci_upper=ci_upper,
+        confidence_level=confidence_level,
+        direction=direction,
+        is_significant=is_significant,
+        is_meaningful=is_meaningful,
     )
 
 
@@ -624,12 +691,12 @@ def analyze_intervention_impact(
         InterventionImpact with complete analysis
     """
     # Filter to this biomarker
-    bio_data = signals[signals['biomarker_slug'] == biomarker].copy()
+    bio_data = signals[signals["biomarker_slug"] == biomarker].copy()
     if len(bio_data) == 0:
         return _empty_impact(intervention, biomarker, "No data for this biomarker")
 
-    bio_data['time'] = pd.to_datetime(bio_data['time'])
-    bio_data = bio_data.sort_values('time')
+    bio_data["time"] = pd.to_datetime(bio_data["time"])
+    bio_data = bio_data.sort_values("time")
 
     # Define periods
     intervention_dt = pd.Timestamp(intervention.start_date)
@@ -637,28 +704,30 @@ def analyze_intervention_impact(
     after_end = intervention_dt + pd.Timedelta(days=after_days)
 
     # Split data
-    before_mask = (bio_data['time'] >= before_start) & (bio_data['time'] < intervention_dt)
-    after_mask = (bio_data['time'] >= intervention_dt) & (bio_data['time'] <= after_end)
+    before_mask = (bio_data["time"] >= before_start) & (
+        bio_data["time"] < intervention_dt
+    )
+    after_mask = (bio_data["time"] >= intervention_dt) & (bio_data["time"] <= after_end)
 
-    before_data = bio_data[before_mask]['value'].values
-    after_data = bio_data[after_mask]['value'].values
-    before_dates = bio_data[before_mask]['time'].values
-    after_dates = bio_data[after_mask]['time'].values
+    before_data = bio_data[before_mask]["value"].values
+    after_data = bio_data[after_mask]["value"].values
+    before_dates = bio_data[before_mask]["time"].values
+    after_dates = bio_data[after_mask]["time"].values
 
     if len(before_data) < 5 or len(after_data) < 5:
-        return _empty_impact(intervention, biomarker, "Insufficient data in before/after periods")
+        return _empty_impact(
+            intervention, biomarker, "Insufficient data in before/after periods"
+        )
 
     # Core statistical change
     change = analyze_biomarker_change(biomarker, before_data, after_data)
 
     # Trend analysis
     pre_slope, pre_p, pre_sig = analyze_trend(
-        pd.Series(before_data),
-        pd.DatetimeIndex(before_dates)
+        pd.Series(before_data), pd.DatetimeIndex(before_dates)
     )
     post_slope, post_p, post_sig = analyze_trend(
-        pd.Series(after_data),
-        pd.DatetimeIndex(after_dates)
+        pd.Series(after_data), pd.DatetimeIndex(after_dates)
     )
 
     # Level jump
@@ -678,17 +747,19 @@ def analyze_intervention_impact(
         trend_reversal=(pre_slope * post_slope < 0) and (pre_sig or post_sig),
         level_jump=jump,
         level_jump_pvalue=jump_p,
-        level_jump_significant=jump_sig
+        level_jump_significant=jump_sig,
     )
 
     # Seasonality control (needs full time series)
-    all_data = pd.Series(bio_data['value'].values, index=pd.DatetimeIndex(bio_data['time']))
+    all_data = pd.Series(
+        bio_data["value"].values, index=pd.DatetimeIndex(bio_data["time"])
+    )
     seasonality = analyze_seasonality(
         all_data,
-        pd.DatetimeIndex(bio_data['time']),
+        pd.DatetimeIndex(bio_data["time"]),
         intervention.start_date,
         before_days,
-        after_days
+        after_days,
     )
 
     # Determine verdict
@@ -704,7 +775,7 @@ def analyze_intervention_impact(
         # Wide CI for projection
         projected_ci = (
             projected_value - 2 * change.after_std,
-            projected_value + 2 * change.after_std
+            projected_value + 2 * change.after_std,
         )
 
     return InterventionImpact(
@@ -718,30 +789,53 @@ def analyze_intervention_impact(
         interpretation=interpretation,
         caveats=caveats,
         projected_90_day_value=projected_value,
-        projected_90_day_ci=projected_ci
+        projected_90_day_ci=projected_ci,
     )
 
 
-def _empty_impact(intervention: Intervention, biomarker: str, reason: str) -> InterventionImpact:
+def _empty_impact(
+    intervention: Intervention, biomarker: str, reason: str
+) -> InterventionImpact:
     """Create an empty impact result for missing/insufficient data."""
     empty_change = BiomarkerChange(
         biomarker=biomarker,
-        before_mean=np.nan, before_std=np.nan, before_median=np.nan, before_n=0,
-        after_mean=np.nan, after_std=np.nan, after_median=np.nan, after_n=0,
-        absolute_change=np.nan, percent_change=np.nan,
-        t_statistic=np.nan, t_pvalue=1.0,
-        mann_whitney_statistic=np.nan, mann_whitney_pvalue=1.0,
-        cohens_d=0.0, effect_size_interpretation='negligible',
-        change_ci_lower=np.nan, change_ci_upper=np.nan, confidence_level=0.95,
-        direction='unchanged', is_significant=False, is_meaningful=False
+        before_mean=np.nan,
+        before_std=np.nan,
+        before_median=np.nan,
+        before_n=0,
+        after_mean=np.nan,
+        after_std=np.nan,
+        after_median=np.nan,
+        after_n=0,
+        absolute_change=np.nan,
+        percent_change=np.nan,
+        t_statistic=np.nan,
+        t_pvalue=1.0,
+        mann_whitney_statistic=np.nan,
+        mann_whitney_pvalue=1.0,
+        cohens_d=0.0,
+        effect_size_interpretation="negligible",
+        change_ci_lower=np.nan,
+        change_ci_upper=np.nan,
+        confidence_level=0.95,
+        direction="unchanged",
+        is_significant=False,
+        is_meaningful=False,
     )
 
     empty_trend = TrendAnalysis(
         biomarker=biomarker,
-        pre_trend_slope=0, pre_trend_pvalue=1.0, pre_trend_significant=False,
-        post_trend_slope=0, post_trend_pvalue=1.0, post_trend_significant=False,
-        slope_change=0, trend_reversal=False,
-        level_jump=0, level_jump_pvalue=1.0, level_jump_significant=False
+        pre_trend_slope=0,
+        pre_trend_pvalue=1.0,
+        pre_trend_significant=False,
+        post_trend_slope=0,
+        post_trend_pvalue=1.0,
+        post_trend_significant=False,
+        slope_change=0,
+        trend_reversal=False,
+        level_jump=0,
+        level_jump_pvalue=1.0,
+        level_jump_significant=False,
     )
 
     return InterventionImpact(
@@ -750,19 +844,19 @@ def _empty_impact(intervention: Intervention, biomarker: str, reason: str) -> In
         change=empty_change,
         trend_analysis=empty_trend,
         seasonality_control=None,
-        verdict='inconclusive',
+        verdict="inconclusive",
         confidence_score=0,
         interpretation=reason,
         caveats=[reason],
         projected_90_day_value=None,
-        projected_90_day_ci=None
+        projected_90_day_ci=None,
     )
 
 
 def _determine_verdict(
     change: BiomarkerChange,
     trend: TrendAnalysis,
-    seasonality: Optional[SeasonalityControl]
+    seasonality: Optional[SeasonalityControl],
 ) -> tuple[str, float, str, list[str]]:
     """Determine overall verdict with confidence and interpretation."""
     caveats = []
@@ -770,17 +864,23 @@ def _determine_verdict(
 
     # Check for confounds
     if trend.pre_trend_significant:
-        caveats.append(f"Pre-existing trend detected (slope={trend.pre_trend_slope:.4f}/day)")
+        caveats.append(
+            f"Pre-existing trend detected (slope={trend.pre_trend_slope:.4f}/day)"
+        )
         confidence -= 15
 
     if seasonality and seasonality.has_seasonal_pattern:
         if not seasonality.robust_to_seasonal:
-            caveats.append(f"Seasonal effects may explain {abs(seasonality.seasonal_contribution):.1f} of the change")
+            caveats.append(
+                f"Seasonal effects may explain {abs(seasonality.seasonal_contribution):.1f} of the change"
+            )
             confidence -= 20
 
     # Small sample penalty
     if change.before_n < 14 or change.after_n < 14:
-        caveats.append(f"Limited data (n={change.before_n}/{change.after_n} before/after)")
+        caveats.append(
+            f"Limited data (n={change.before_n}/{change.after_n} before/after)"
+        )
         confidence -= 10
 
     # Determine verdict
@@ -788,13 +888,13 @@ def _determine_verdict(
         if abs(change.cohens_d) >= 0.2:
             # Trending but not significant
             if change.absolute_change > 0:
-                verdict = 'weak_positive'
+                verdict = "weak_positive"
                 interpretation = f"{change.biomarker} shows a positive trend (+{change.percent_change:.1f}%) but not statistically significant (p={change.t_pvalue:.3f})"
             else:
-                verdict = 'weak_negative'
+                verdict = "weak_negative"
                 interpretation = f"{change.biomarker} shows a negative trend ({change.percent_change:.1f}%) but not statistically significant (p={change.t_pvalue:.3f})"
         else:
-            verdict = 'no_effect'
+            verdict = "no_effect"
             interpretation = f"No detectable change in {change.biomarker} (change: {change.percent_change:+.1f}%, p={change.t_pvalue:.3f})"
     else:
         # Significant
@@ -802,24 +902,24 @@ def _determine_verdict(
         robust = len(caveats) == 0 or (seasonality and seasonality.robust_to_seasonal)
 
         if change.absolute_change > 0:
-            if effect in ('medium', 'large') and robust:
-                verdict = 'strong_positive'
+            if effect in ("medium", "large") and robust:
+                verdict = "strong_positive"
                 interpretation = f"{change.biomarker} significantly increased by {change.percent_change:.1f}% ({effect} effect, p={change.t_pvalue:.3f}). Effect is robust to confound analysis."
-            elif effect in ('medium', 'large'):
-                verdict = 'moderate_positive'
+            elif effect in ("medium", "large"):
+                verdict = "moderate_positive"
                 interpretation = f"{change.biomarker} increased by {change.percent_change:.1f}% ({effect} effect, p={change.t_pvalue:.3f}), but some confounds detected."
             else:
-                verdict = 'weak_positive'
+                verdict = "weak_positive"
                 interpretation = f"{change.biomarker} increased by {change.percent_change:.1f}% (small effect, p={change.t_pvalue:.3f})."
         else:
-            if effect in ('medium', 'large') and robust:
-                verdict = 'strong_negative'
+            if effect in ("medium", "large") and robust:
+                verdict = "strong_negative"
                 interpretation = f"{change.biomarker} significantly decreased by {abs(change.percent_change):.1f}% ({effect} effect, p={change.t_pvalue:.3f}). Effect is robust."
-            elif effect in ('medium', 'large'):
-                verdict = 'moderate_negative'
+            elif effect in ("medium", "large"):
+                verdict = "moderate_negative"
                 interpretation = f"{change.biomarker} decreased by {abs(change.percent_change):.1f}% ({effect} effect, p={change.t_pvalue:.3f}), but some confounds detected."
             else:
-                verdict = 'weak_negative'
+                verdict = "weak_negative"
                 interpretation = f"{change.biomarker} decreased by {abs(change.percent_change):.1f}% (small effect, p={change.t_pvalue:.3f})."
 
     # Floor confidence
@@ -849,7 +949,7 @@ def generate_intervention_report(
     """
     # Get available biomarkers if not specified
     if biomarkers is None:
-        biomarkers = signals['biomarker_slug'].unique().tolist()
+        biomarkers = signals["biomarker_slug"].unique().tolist()
 
     # Analyze each biomarker
     impacts = []
@@ -867,13 +967,13 @@ def generate_intervention_report(
     unchanged = []
 
     for impact in impacts:
-        if impact.verdict in ('no_effect', 'inconclusive'):
+        if impact.verdict in ("no_effect", "inconclusive"):
             unchanged.append(impact.biomarker)
         else:
             # Check if the change direction is a health improvement
-            direction = 'increased' if 'positive' in impact.verdict else 'decreased'
+            direction = "increased" if "positive" in impact.verdict else "decreased"
             is_improvement = _is_health_improvement(impact.biomarker, direction)
-            is_strong_or_moderate = impact.verdict.startswith(('strong', 'moderate'))
+            is_strong_or_moderate = impact.verdict.startswith(("strong", "moderate"))
 
             if is_strong_or_moderate:
                 if is_improvement:
@@ -886,30 +986,38 @@ def generate_intervention_report(
     # Determine overall verdict using health-aware counts
     n_improved = len(improved)
     n_declined = len(declined)
-    n_strong = len([i for i in impacts if i.verdict.startswith('strong')])
+    n_strong = len([i for i in impacts if i.verdict.startswith("strong")])
     n_meaningful = len([i for i in impacts if i.change.is_meaningful])
 
     if n_meaningful == 0:
-        overall_verdict = 'no_clear_effect'
+        overall_verdict = "no_clear_effect"
     elif n_improved > n_declined * 2 and n_strong > 0:
-        overall_verdict = 'highly_effective'
+        overall_verdict = "highly_effective"
     elif n_improved > n_declined:
-        overall_verdict = 'moderately_effective' if n_meaningful > 1 else 'slightly_effective'
+        overall_verdict = (
+            "moderately_effective" if n_meaningful > 1 else "slightly_effective"
+        )
     elif n_declined > n_improved * 2:
-        overall_verdict = 'harmful'
+        overall_verdict = "harmful"
     elif n_declined > n_improved:
-        overall_verdict = 'slightly_harmful'
+        overall_verdict = "slightly_harmful"
     else:
-        overall_verdict = 'no_clear_effect'
+        overall_verdict = "no_clear_effect"
 
     # Compute overall confidence
-    valid_impacts = [i for i in impacts if i.verdict != 'inconclusive']
-    overall_confidence = np.mean([i.confidence_score for i in valid_impacts]) if valid_impacts else 0
+    valid_impacts = [i for i in impacts if i.verdict != "inconclusive"]
+    overall_confidence = (
+        np.mean([i.confidence_score for i in valid_impacts]) if valid_impacts else 0
+    )
 
     # Generate insights
-    primary_insight = _generate_primary_insight(intervention, impacts, overall_verdict, after_days)
+    primary_insight = _generate_primary_insight(
+        intervention, impacts, overall_verdict, after_days
+    )
     secondary_insights = _generate_secondary_insights(impacts)
-    recommendations = _generate_recommendations(intervention, impacts, overall_verdict, after_days)
+    recommendations = _generate_recommendations(
+        intervention, impacts, overall_verdict, after_days
+    )
 
     # Calculate analysis periods
     intervention_date = pd.Timestamp(intervention.start_date)
@@ -932,7 +1040,7 @@ def generate_intervention_report(
         recommendations=recommendations,
         total_data_points=sum(i.change.before_n + i.change.after_n for i in impacts),
         statistical_power=_estimate_power(impacts),
-        multiple_comparison_correction="Reported per-test; interpret with caution for multiple biomarkers"
+        multiple_comparison_correction="Reported per-test; interpret with caution for multiple biomarkers",
     )
 
 
@@ -940,52 +1048,55 @@ def _generate_primary_insight(
     intervention: Intervention,
     impacts: list[InterventionImpact],
     verdict: str,
-    analysis_days: int
+    analysis_days: int,
 ) -> str:
     """Generate the main takeaway insight."""
     meaningful = [i for i in impacts if i.change.is_meaningful]
 
-    if verdict == 'highly_effective':
+    if verdict == "highly_effective":
         # Find the top health-improving impact
         improved_impacts = [
-            i for i in meaningful
+            i
+            for i in meaningful
             if _is_health_improvement(
-                i.biomarker,
-                'increased' if 'positive' in i.verdict else 'decreased'
+                i.biomarker, "increased" if "positive" in i.verdict else "decreased"
             )
         ]
         if improved_impacts:
             top_impact = max(improved_impacts, key=lambda x: abs(x.change.cohens_d))
-            change_word = "improved" if 'positive' in top_impact.verdict else "decreased"
+            change_word = (
+                "improved" if "positive" in top_impact.verdict else "decreased"
+            )
             return (
                 f"Strong evidence that '{intervention.name}' is working. "
                 f"Most notably, {top_impact.biomarker} {change_word} by {abs(top_impact.change.percent_change):.1f}% "
                 f"with {top_impact.confidence_score:.0f}% confidence."
             )
         return f"Strong evidence that '{intervention.name}' is working."
-    elif verdict == 'moderately_effective':
+    elif verdict == "moderately_effective":
         return (
             f"'{intervention.name}' shows positive effects. "
             f"{len(meaningful)} biomarker(s) improved significantly."
         )
-    elif verdict == 'slightly_effective':
+    elif verdict == "slightly_effective":
         return (
             f"'{intervention.name}' may be helping, but effects are small. "
             f"Consider continuing for more data."
         )
-    elif verdict == 'no_clear_effect':
+    elif verdict == "no_clear_effect":
         return (
             f"No clear effect detected from '{intervention.name}' after "
             f"{analysis_days} days of observation. This could mean: (1) no real effect, "
             f"(2) effect too small to detect, or (3) more time needed."
         )
-    elif verdict in ('slightly_harmful', 'harmful'):
+    elif verdict in ("slightly_harmful", "harmful"):
         # Count health-negative changes
         harmful_impacts = [
-            i for i in impacts
-            if i.change.is_meaningful and not _is_health_improvement(
-                i.biomarker,
-                'increased' if 'positive' in i.verdict else 'decreased'
+            i
+            for i in impacts
+            if i.change.is_meaningful
+            and not _is_health_improvement(
+                i.biomarker, "increased" if "positive" in i.verdict else "decreased"
             )
         ]
         return (
@@ -1021,7 +1132,8 @@ def _generate_secondary_insights(impacts: list[InterventionImpact]) -> list[str]
 
     # Seasonal concerns
     seasonal_concerns = [
-        i for i in impacts
+        i
+        for i in impacts
         if i.seasonality_control and not i.seasonality_control.robust_to_seasonal
     ]
     if seasonal_concerns:
@@ -1037,23 +1149,27 @@ def _generate_recommendations(
     intervention: Intervention,
     impacts: list[InterventionImpact],
     verdict: str,
-    analysis_days: int
+    analysis_days: int,
 ) -> list[str]:
     """Generate actionable recommendations."""
     recs = []
 
-    if verdict in ('highly_effective', 'moderately_effective'):
-        recs.append(f"Continue '{intervention.name}' - data supports its effectiveness.")
+    if verdict in ("highly_effective", "moderately_effective"):
+        recs.append(
+            f"Continue '{intervention.name}' - data supports its effectiveness."
+        )
 
         # Suggest optimization
-        weak_areas = [i for i in impacts if i.verdict == 'no_effect' and i.change.before_n > 10]
+        weak_areas = [
+            i for i in impacts if i.verdict == "no_effect" and i.change.before_n > 10
+        ]
         if weak_areas:
             recs.append(
                 f"Consider: {intervention.name} isn't affecting {weak_areas[0].biomarker}. "
                 f"A complementary intervention might help."
             )
 
-    elif verdict == 'no_clear_effect':
+    elif verdict == "no_clear_effect":
         if analysis_days < 21:
             recs.append(
                 f"Consider continuing for at least 3 weeks total. "
@@ -1066,7 +1182,7 @@ def _generate_recommendations(
                 f"(3) accepting this may not work for you."
             )
 
-    elif verdict in ('slightly_harmful', 'harmful'):
+    elif verdict in ("slightly_harmful", "harmful"):
         recs.append(
             f"Consider stopping or modifying '{intervention.name}'. "
             f"Consult a professional if health concerns."
@@ -1075,9 +1191,7 @@ def _generate_recommendations(
     # Data quality recommendations
     low_data = [i for i in impacts if i.change.before_n < 14 or i.change.after_n < 14]
     if len(low_data) > len(impacts) // 2:
-        recs.append(
-            "More data would increase confidence. Ensure consistent tracking."
-        )
+        recs.append("More data would increase confidence. Ensure consistent tracking.")
 
     return recs[:4]  # Max 4 recommendations
 
@@ -1085,7 +1199,11 @@ def _generate_recommendations(
 def _estimate_power(impacts: list[InterventionImpact]) -> float:
     """Estimate statistical power to detect effects."""
     # Simple heuristic based on sample sizes
-    n_values = [(i.change.before_n + i.change.after_n) / 2 for i in impacts if i.change.before_n > 0]
+    n_values = [
+        (i.change.before_n + i.change.after_n) / 2
+        for i in impacts
+        if i.change.before_n > 0
+    ]
 
     if not n_values:
         return 0.0

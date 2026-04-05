@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 import pandas as pd
-from datetime import datetime
 
 from ..database import get_db, get_db_session
 from ..schemas import Baseline, BaselineCompute, DeviationCheck, DeviationResult
@@ -105,16 +104,14 @@ def _compute_and_store_baselines(
                     WHERE biomarker_slug = ANY(:slugs)
                     ORDER BY time
                 """),
-                {"slugs": biomarker_slugs}
+                {"slugs": biomarker_slugs},
             )
         else:
-            result = db.execute(
-                text("""
+            result = db.execute(text("""
                     SELECT time, biomarker_slug, value
                     FROM signals
                     ORDER BY time
-                """)
-            )
+                """))
         rows = result.fetchall()
 
         if not rows:

@@ -1,11 +1,12 @@
 """Pytest configuration and shared fixtures."""
 
-import pytest
-import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
 import sys
+from datetime import datetime
 from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import pytest
 
 # Add science layer to path
 science_path = Path(__file__).parent.parent / "science"
@@ -26,11 +27,9 @@ def sample_hr_data() -> pd.DataFrame:
     hr_values = base_hr + circadian_variation + noise
     hr_values = np.clip(hr_values, 40, 120)
 
-    return pd.DataFrame({
-        "time": dates,
-        "biomarker_slug": "heart_rate",
-        "value": hr_values
-    })
+    return pd.DataFrame(
+        {"time": dates, "biomarker_slug": "heart_rate", "value": hr_values}
+    )
 
 
 @pytest.fixture
@@ -47,11 +46,9 @@ def sample_steps_data() -> pd.DataFrame:
     step_values = base_steps + weekly_variation + noise
     step_values = np.clip(step_values, 0, 25000)
 
-    return pd.DataFrame({
-        "time": dates,
-        "biomarker_slug": "steps",
-        "value": step_values
-    })
+    return pd.DataFrame(
+        {"time": dates, "biomarker_slug": "steps", "value": step_values}
+    )
 
 
 @pytest.fixture
@@ -66,11 +63,9 @@ def sample_hrv_data() -> pd.DataFrame:
     hrv_values = base_hrv + noise
     hrv_values = np.clip(hrv_values, 10, 100)
 
-    return pd.DataFrame({
-        "time": dates,
-        "biomarker_slug": "hrv_sdnn",
-        "value": hrv_values
-    })
+    return pd.DataFrame(
+        {"time": dates, "biomarker_slug": "hrv_sdnn", "value": hrv_values}
+    )
 
 
 @pytest.fixture
@@ -85,11 +80,9 @@ def sample_rhr_data() -> pd.DataFrame:
     rhr_values = base_rhr + noise
     rhr_values = np.clip(rhr_values, 45, 80)
 
-    return pd.DataFrame({
-        "time": dates,
-        "biomarker_slug": "heart_rate_resting",
-        "value": rhr_values
-    })
+    return pd.DataFrame(
+        {"time": dates, "biomarker_slug": "heart_rate_resting", "value": rhr_values}
+    )
 
 
 @pytest.fixture
@@ -97,22 +90,18 @@ def combined_signals_df(
     sample_hr_data, sample_steps_data, sample_hrv_data, sample_rhr_data
 ) -> pd.DataFrame:
     """Combine all sample data into a single DataFrame."""
-    return pd.concat([
-        sample_hr_data,
-        sample_steps_data,
-        sample_hrv_data,
-        sample_rhr_data
-    ], ignore_index=True)
+    return pd.concat(
+        [sample_hr_data, sample_steps_data, sample_hrv_data, sample_rhr_data],
+        ignore_index=True,
+    )
 
 
 @pytest.fixture
 def minimal_signals_df() -> pd.DataFrame:
     """Minimal data that should fail most analyses."""
-    return pd.DataFrame({
-        "time": [datetime.now()],
-        "biomarker_slug": ["heart_rate"],
-        "value": [70.0]
-    })
+    return pd.DataFrame(
+        {"time": [datetime.now()], "biomarker_slug": ["heart_rate"], "value": [70.0]}
+    )
 
 
 @pytest.fixture

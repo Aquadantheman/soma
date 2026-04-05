@@ -52,7 +52,7 @@ def _nocturnal_dip_to_schema(r) -> NocturnalDipSchema:
         classification=r.classification,
         n_days=r.n_days,
         is_concerning=r.is_concerning,
-        clinical_note=r.clinical_note
+        clinical_note=r.clinical_note,
     )
 
 
@@ -64,7 +64,7 @@ def _training_load_to_schema(r) -> TrainingLoadSchema:
         classification=r.classification,
         days_in_risky_zone=r.days_in_risky_zone,
         total_days=r.total_days,
-        risk_percent=r.risk_percent
+        risk_percent=r.risk_percent,
     )
 
 
@@ -76,7 +76,7 @@ def _autonomic_balance_to_schema(r) -> AutonomicBalanceSchema:
         ratio_trend_30d=r.ratio_trend_30d,
         percentile=r.percentile,
         n_days=r.n_days,
-        assessment=r.assessment
+        assessment=r.assessment,
     )
 
 
@@ -89,7 +89,7 @@ def _stress_index_to_schema(r) -> StressIndexSchema:
         classification=r.classification,
         high_stress_days=r.high_stress_days,
         total_days=r.total_days,
-        n_metrics_used=r.n_metrics_used
+        n_metrics_used=r.n_metrics_used,
     )
 
 
@@ -100,7 +100,7 @@ def _behavioral_regularity_to_schema(r) -> BehavioralRegularitySchema:
         stability_score=r.stability_score,
         disruption_days=r.disruption_days,
         total_days=r.total_days,
-        trend=r.trend
+        trend=r.trend,
     )
 
 
@@ -111,7 +111,7 @@ def _cardiovascular_efficiency_to_schema(r) -> CardiovascularEfficiencySchema:
         trend_30d=r.trend_30d,
         best_day_score=r.best_day_score,
         worst_day_score=r.worst_day_score,
-        n_days=r.n_days
+        n_days=r.n_days,
     )
 
 
@@ -122,7 +122,7 @@ def _strain_index_to_schema(r) -> StrainIndexSchema:
         high_strain_days=r.high_strain_days,
         low_strain_days=r.low_strain_days,
         total_days=r.total_days,
-        strain_trend_7d=r.strain_trend_7d
+        strain_trend_7d=r.strain_trend_7d,
     )
 
 
@@ -134,7 +134,7 @@ def _recovery_trend_to_schema(r) -> RecoveryTrendSchema:
         days_improving=r.days_improving,
         days_declining=r.days_declining,
         total_days=r.total_days,
-        confidence=r.confidence
+        confidence=r.confidence,
     )
 
 
@@ -145,7 +145,7 @@ def _circadian_amplitude_to_schema(r) -> CircadianAmplitudeSchema:
         change_percent=r.change_percent,
         trend=r.trend,
         monthly_values=r.monthly_values,
-        is_healthy=r.is_healthy
+        is_healthy=r.is_healthy,
     )
 
 
@@ -156,7 +156,7 @@ def _energy_distribution_to_schema(r) -> EnergyDistributionSchema:
         ratio=r.ratio,
         chronotype=r.chronotype,
         consistency=r.consistency,
-        n_days=r.n_days
+        n_days=r.n_days,
     )
 
 
@@ -167,7 +167,7 @@ def _night_restlessness_to_schema(r) -> NightRestlessnessSchema:
         total_nights=r.total_nights,
         restless_percent=r.restless_percent,
         trend=r.trend,
-        worst_night=r.worst_night
+        worst_night=r.worst_night,
     )
 
 
@@ -177,7 +177,7 @@ def _physiological_coherence_to_schema(r) -> PhysiologicalCoherenceSchema:
         hrv_rhr_correlation=r.hrv_rhr_correlation,
         hrv_activity_correlation=r.hrv_activity_correlation,
         is_coherent=r.is_coherent,
-        n_days=r.n_days
+        n_days=r.n_days,
     )
 
 
@@ -213,26 +213,75 @@ def get_derived_metrics(
     result = generate_derived_metrics_report(df)
 
     return DerivedMetricsReportSchema(
-        nocturnal_dip=_nocturnal_dip_to_schema(result.nocturnal_dip) if result.nocturnal_dip else None,
-        training_load=_training_load_to_schema(result.training_load) if result.training_load else None,
-        autonomic_balance=_autonomic_balance_to_schema(result.autonomic_balance) if result.autonomic_balance else None,
-        stress_index=_stress_index_to_schema(result.stress_index) if result.stress_index else None,
-        behavioral_regularity=_behavioral_regularity_to_schema(result.behavioral_regularity) if result.behavioral_regularity else None,
-        cardiovascular_efficiency=_cardiovascular_efficiency_to_schema(result.cardiovascular_efficiency) if result.cardiovascular_efficiency else None,
-        strain_index=_strain_index_to_schema(result.strain_index) if result.strain_index else None,
-        recovery_trend=_recovery_trend_to_schema(result.recovery_trend) if result.recovery_trend else None,
-        circadian_amplitude=_circadian_amplitude_to_schema(result.circadian_amplitude) if result.circadian_amplitude else None,
-        energy_distribution=_energy_distribution_to_schema(result.energy_distribution) if result.energy_distribution else None,
-        night_restlessness=_night_restlessness_to_schema(result.night_restlessness) if result.night_restlessness else None,
-        physiological_coherence=_physiological_coherence_to_schema(result.physiological_coherence) if result.physiological_coherence else None,
+        nocturnal_dip=(
+            _nocturnal_dip_to_schema(result.nocturnal_dip)
+            if result.nocturnal_dip
+            else None
+        ),
+        training_load=(
+            _training_load_to_schema(result.training_load)
+            if result.training_load
+            else None
+        ),
+        autonomic_balance=(
+            _autonomic_balance_to_schema(result.autonomic_balance)
+            if result.autonomic_balance
+            else None
+        ),
+        stress_index=(
+            _stress_index_to_schema(result.stress_index)
+            if result.stress_index
+            else None
+        ),
+        behavioral_regularity=(
+            _behavioral_regularity_to_schema(result.behavioral_regularity)
+            if result.behavioral_regularity
+            else None
+        ),
+        cardiovascular_efficiency=(
+            _cardiovascular_efficiency_to_schema(result.cardiovascular_efficiency)
+            if result.cardiovascular_efficiency
+            else None
+        ),
+        strain_index=(
+            _strain_index_to_schema(result.strain_index)
+            if result.strain_index
+            else None
+        ),
+        recovery_trend=(
+            _recovery_trend_to_schema(result.recovery_trend)
+            if result.recovery_trend
+            else None
+        ),
+        circadian_amplitude=(
+            _circadian_amplitude_to_schema(result.circadian_amplitude)
+            if result.circadian_amplitude
+            else None
+        ),
+        energy_distribution=(
+            _energy_distribution_to_schema(result.energy_distribution)
+            if result.energy_distribution
+            else None
+        ),
+        night_restlessness=(
+            _night_restlessness_to_schema(result.night_restlessness)
+            if result.night_restlessness
+            else None
+        ),
+        physiological_coherence=(
+            _physiological_coherence_to_schema(result.physiological_coherence)
+            if result.physiological_coherence
+            else None
+        ),
         concerns=result.concerns,
-        positive_findings=result.positive_findings
+        positive_findings=result.positive_findings,
     )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # TIER 1: HIGH VALUE METRICS (Clinically Validated)
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 @router.get("/nocturnal-dip", response_model=NocturnalDipSchema)
 def get_nocturnal_dip(
@@ -254,7 +303,7 @@ def get_nocturnal_dip(
     if result is None:
         raise HTTPException(
             status_code=404,
-            detail="Insufficient heart rate data for nocturnal dip analysis"
+            detail="Insufficient heart rate data for nocturnal dip analysis",
         )
 
     return _nocturnal_dip_to_schema(result)
@@ -282,7 +331,7 @@ def get_training_load(
     if result is None:
         raise HTTPException(
             status_code=404,
-            detail="Insufficient activity data for training load analysis"
+            detail="Insufficient activity data for training load analysis",
         )
 
     return _training_load_to_schema(result)
@@ -305,7 +354,7 @@ def get_autonomic_balance(
     if result is None:
         raise HTTPException(
             status_code=404,
-            detail="Insufficient HRV and RHR data for autonomic balance analysis"
+            detail="Insufficient HRV and RHR data for autonomic balance analysis",
         )
 
     return _autonomic_balance_to_schema(result)
@@ -332,7 +381,7 @@ def get_stress_index(
     if result is None:
         raise HTTPException(
             status_code=404,
-            detail="Insufficient HRV/RHR data for stress index calculation"
+            detail="Insufficient HRV/RHR data for stress index calculation",
         )
 
     return _stress_index_to_schema(result)
@@ -357,7 +406,7 @@ def get_behavioral_regularity(
     if result is None:
         raise HTTPException(
             status_code=404,
-            detail="Insufficient step data for behavioral regularity analysis"
+            detail="Insufficient step data for behavioral regularity analysis",
         )
 
     return _behavioral_regularity_to_schema(result)
@@ -366,6 +415,7 @@ def get_behavioral_regularity(
 # ─────────────────────────────────────────────────────────────────────────────
 # TIER 2: PERSONAL TRACKING METRICS
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 @router.get("/cardiovascular-efficiency", response_model=CardiovascularEfficiencySchema)
 def get_cardiovascular_efficiency(
@@ -383,8 +433,7 @@ def get_cardiovascular_efficiency(
 
     if result is None:
         raise HTTPException(
-            status_code=404,
-            detail="Insufficient activity and heart rate data"
+            status_code=404, detail="Insufficient activity and heart rate data"
         )
 
     return _cardiovascular_efficiency_to_schema(result)
@@ -405,8 +454,7 @@ def get_strain_index(
 
     if result is None:
         raise HTTPException(
-            status_code=404,
-            detail="Insufficient activity data for strain analysis"
+            status_code=404, detail="Insufficient activity data for strain analysis"
         )
 
     return _strain_index_to_schema(result)
@@ -429,7 +477,7 @@ def get_recovery_trend(
     if result is None:
         raise HTTPException(
             status_code=404,
-            detail="Insufficient HRV/RHR data for recovery trend analysis"
+            detail="Insufficient HRV/RHR data for recovery trend analysis",
         )
 
     return _recovery_trend_to_schema(result)
@@ -452,7 +500,7 @@ def get_circadian_amplitude(
     if result is None:
         raise HTTPException(
             status_code=404,
-            detail="Insufficient heart rate data for circadian amplitude analysis"
+            detail="Insufficient heart rate data for circadian amplitude analysis",
         )
 
     return _circadian_amplitude_to_schema(result)
@@ -476,8 +524,7 @@ def get_chronotype(
 
     if result is None:
         raise HTTPException(
-            status_code=404,
-            detail="Insufficient activity data for chronotype analysis"
+            status_code=404, detail="Insufficient activity data for chronotype analysis"
         )
 
     return _energy_distribution_to_schema(result)
@@ -486,6 +533,7 @@ def get_chronotype(
 # ─────────────────────────────────────────────────────────────────────────────
 # TIER 3: EXPERIMENTAL METRICS
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 @router.get("/night-restlessness", response_model=NightRestlessnessSchema)
 def get_night_restlessness(
@@ -502,10 +550,7 @@ def get_night_restlessness(
     result = analyze_night_restlessness(df)
 
     if result is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Insufficient night activity data"
-        )
+        raise HTTPException(status_code=404, detail="Insufficient night activity data")
 
     return _night_restlessness_to_schema(result)
 
@@ -529,7 +574,7 @@ def get_physiological_coherence(
     if result is None:
         raise HTTPException(
             status_code=404,
-            detail="Insufficient multi-metric data for coherence analysis"
+            detail="Insufficient multi-metric data for coherence analysis",
         )
 
     return _physiological_coherence_to_schema(result)

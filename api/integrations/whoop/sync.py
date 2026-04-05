@@ -52,7 +52,9 @@ class SyncResult:
         }
 
 
-def get_oauth_connection(db: Session, user_id: UUID, provider: str = "whoop") -> Optional[dict]:
+def get_oauth_connection(
+    db: Session, user_id: UUID, provider: str = "whoop"
+) -> Optional[dict]:
     """Get OAuth connection for user."""
     result = db.execute(
         text("""
@@ -151,7 +153,9 @@ def insert_signals(db: Session, user_id: UUID, signals: list[dict]) -> tuple[int
                     "source_slug": signal["source_slug"],
                     "raw_source_id": signal.get("raw_source_id"),
                     "quality": signal.get("quality", 100),
-                    "meta": json.dumps(signal.get("meta")) if signal.get("meta") else None,
+                    "meta": (
+                        json.dumps(signal.get("meta")) if signal.get("meta") else None
+                    ),
                 },
             )
             if result.fetchone():
@@ -208,7 +212,9 @@ async def sync_whoop_data(
         # First sync - get last 30 days
         start_date = end_date - timedelta(days=30)
 
-    logger.info(f"Syncing Whoop data for user {user_id} from {start_date} to {end_date}")
+    logger.info(
+        f"Syncing Whoop data for user {user_id} from {start_date} to {end_date}"
+    )
 
     try:
         async with WhoopClient(

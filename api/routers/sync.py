@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from ..auth import require_auth, optional_auth, AuthContext
 from ..database import get_db
-from ..integrations.whoop.sync import sync_whoop_data, SyncResult
+from ..integrations.whoop.sync import sync_whoop_data
 
 router = APIRouter(prefix="/sync", tags=["sync"])
 
@@ -26,8 +26,10 @@ DEFAULT_USER_ID = UUID("00000000-0000-0000-0000-000000000001")
 # Schemas
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class SyncStatus(BaseModel):
     """Status of a provider sync."""
+
     provider: str
     connected: bool
     last_sync_at: Optional[datetime] = None
@@ -36,6 +38,7 @@ class SyncStatus(BaseModel):
 
 class SyncResponse(BaseModel):
     """Response from a sync operation."""
+
     provider: str
     status: str  # "success", "partial", "failed"
     sleep_records: int
@@ -50,6 +53,7 @@ class SyncResponse(BaseModel):
 # ─────────────────────────────────────────────────────────────────────────────
 # Endpoints
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 @router.get("/{provider}/status", response_model=SyncStatus)
 async def get_sync_status(
@@ -83,7 +87,9 @@ async def get_sync_status(
 async def trigger_sync(
     provider: str,
     full_sync: bool = Query(False, description="Fetch all historical data"),
-    days_back: int = Query(30, description="Days of history for full sync", ge=1, le=365),
+    days_back: int = Query(
+        30, description="Days of history for full sync", ge=1, le=365
+    ),
     db: Session = Depends(get_db),
     auth: Optional[AuthContext] = Depends(optional_auth),
 ):

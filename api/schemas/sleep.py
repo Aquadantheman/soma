@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 class ConfidenceIntervalSchema(BaseModel):
     """Value with confidence interval."""
+
     mean: float
     ci_lower: float
     ci_upper: float
@@ -16,6 +17,7 @@ class ConfidenceIntervalSchema(BaseModel):
 
 class NightlySleepSchema(BaseModel):
     """Sleep metrics for a single night."""
+
     date: date
     rem_min: float = Field(description="Minutes in REM sleep")
     deep_min: float = Field(description="Minutes in deep sleep")
@@ -30,6 +32,7 @@ class NightlySleepSchema(BaseModel):
 
 class SleepArchitectureBaselineSchema(BaseModel):
     """Personal baseline for sleep architecture."""
+
     computed_at: str
     n_nights: int = Field(description="Number of nights in baseline")
 
@@ -50,6 +53,7 @@ class SleepArchitectureBaselineSchema(BaseModel):
 
 class SleepArchitectureDeviationSchema(BaseModel):
     """How a night's sleep deviates from personal baseline."""
+
     date: date
 
     total_sleep_z: float = Field(description="Z-score for total sleep duration")
@@ -67,6 +71,7 @@ class SleepArchitectureDeviationSchema(BaseModel):
 
 class SleepArchitectureTrendSchema(BaseModel):
     """Trend analysis for a sleep metric."""
+
     metric: str = Field(description="Which metric (rem_pct, deep_pct, etc.)")
     period_days: int
 
@@ -82,6 +87,7 @@ class SleepArchitectureTrendSchema(BaseModel):
 
 class SleepArchitectureReportSchema(BaseModel):
     """Complete sleep architecture analysis report."""
+
     baseline: Optional[SleepArchitectureBaselineSchema]
     recent_nights: List[NightlySleepSchema]
     current_deviation: Optional[SleepArchitectureDeviationSchema]
@@ -98,6 +104,7 @@ class SleepArchitectureReportSchema(BaseModel):
 
 class SleepSummary(BaseModel):
     """Quick summary of sleep health."""
+
     has_sufficient_data: bool
     n_nights_analyzed: int
     avg_total_sleep_min: Optional[float]

@@ -46,7 +46,7 @@ def _pair_to_schema(p) -> CorrelationPairSchema:
         ci_lower=p.ci_lower,
         ci_upper=p.ci_upper,
         is_significant=p.is_significant,
-        effect_size=p.effect_size
+        effect_size=p.effect_size,
     )
 
 
@@ -59,7 +59,7 @@ def _lagged_to_schema(lc) -> LaggedCorrelationSchema:
         ci_lower=lc.ci_lower,
         ci_upper=lc.ci_upper,
         n_observations=lc.n_observations,
-        is_significant=lc.is_significant
+        is_significant=lc.is_significant,
     )
 
 
@@ -72,7 +72,7 @@ def _seasonal_to_schema(sc) -> SeasonalComponentSchema:
         ci_lower=sc.ci_lower,
         ci_upper=sc.ci_upper,
         n_observations=sc.n_observations,
-        deviation_from_annual=sc.deviation_from_annual
+        deviation_from_annual=sc.deviation_from_annual,
     )
 
 
@@ -81,7 +81,9 @@ def _recovery_to_schema(result) -> RecoveryAnalysis:
     return RecoveryAnalysis(
         predictor=result.predictor,
         outcome=result.outcome,
-        lagged_correlations=[_lagged_to_schema(lc) for lc in result.lagged_correlations],
+        lagged_correlations=[
+            _lagged_to_schema(lc) for lc in result.lagged_correlations
+        ],
         optimal_lag=result.optimal_lag,
         optimal_correlation=result.optimal_correlation,
         optimal_p_value=result.optimal_p_value,
@@ -89,7 +91,7 @@ def _recovery_to_schema(result) -> RecoveryAnalysis:
         is_significant=result.is_significant,
         regression_slope=result.regression_slope,
         regression_intercept=result.regression_intercept,
-        r_squared=result.r_squared
+        r_squared=result.r_squared,
     )
 
 
@@ -98,14 +100,16 @@ def _seasonality_to_schema(result) -> SeasonalAnalysisSchema:
     return SeasonalAnalysisSchema(
         biomarker_slug=result.biomarker_slug,
         annual_mean=result.annual_mean,
-        seasonal_components=[_seasonal_to_schema(sc) for sc in result.seasonal_components],
+        seasonal_components=[
+            _seasonal_to_schema(sc) for sc in result.seasonal_components
+        ],
         peak_month=result.peak_month,
         trough_month=result.trough_month,
         seasonal_amplitude=result.seasonal_amplitude,
         seasonality_strength=result.seasonality_strength,
         f_statistic=result.f_statistic,
         p_value=result.p_value,
-        is_significant=result.is_significant
+        is_significant=result.is_significant,
     )
 
 
@@ -127,7 +131,7 @@ def get_correlations(
     if result is None:
         raise HTTPException(
             status_code=404,
-            detail="Insufficient overlapping data for correlation analysis"
+            detail="Insufficient overlapping data for correlation analysis",
         )
 
     return CorrelationMatrixAnalysis(
@@ -135,7 +139,7 @@ def get_correlations(
         biomarkers_analyzed=result.biomarkers_analyzed,
         bonferroni_alpha=result.bonferroni_alpha,
         significant_pairs=[_pair_to_schema(p) for p in result.significant_pairs],
-        method_note=result.method_note
+        method_note=result.method_note,
     )
 
 
@@ -163,7 +167,7 @@ def get_recovery_analysis(
     if result is None:
         raise HTTPException(
             status_code=404,
-            detail=f"Insufficient data for recovery analysis ({predictor} -> {outcome})"
+            detail=f"Insufficient data for recovery analysis ({predictor} -> {outcome})",
         )
 
     return _recovery_to_schema(result)
@@ -187,7 +191,7 @@ def get_seasonality_analysis(
     if result is None:
         raise HTTPException(
             status_code=404,
-            detail=f"Insufficient data for seasonal analysis on '{biomarker_slug}'"
+            detail=f"Insufficient data for seasonal analysis on '{biomarker_slug}'",
         )
 
     return _seasonality_to_schema(result)
@@ -213,14 +217,13 @@ def get_readiness_analysis(
     if model is None:
         raise HTTPException(
             status_code=404,
-            detail="Insufficient HRV and RHR data for readiness scoring"
+            detail="Insufficient HRV and RHR data for readiness scoring",
         )
 
     scores = compute_readiness_scores(df, model)
     if not scores:
         raise HTTPException(
-            status_code=404,
-            detail="Could not compute readiness scores"
+            status_code=404, detail="Could not compute readiness scores"
         )
 
     summary = get_readiness_summary(scores)
@@ -241,10 +244,10 @@ def get_readiness_analysis(
                 hrv_z_score=s.hrv_z_score,
                 rhr_z_score=s.rhr_z_score,
                 components=s.components,
-                interpretation=s.interpretation
+                interpretation=s.interpretation,
             )
             for s in scores[:30]  # Last 30 days
-        ]
+        ],
     )
 
 
@@ -271,7 +274,7 @@ def get_advanced_summary(
         "Correlations: Bonferroni-corrected for multiple comparisons",
         "Recovery: Lagged Pearson correlations (0-3 days)",
         "Seasonality: One-way ANOVA across months",
-        "Readiness: z-score weighted composite (60% HRV, 40% RHR)"
+        "Readiness: z-score weighted composite (60% HRV, 40% RHR)",
     ]
 
     # Correlations
@@ -283,7 +286,7 @@ def get_advanced_summary(
             biomarkers_analyzed=corr.biomarkers_analyzed,
             bonferroni_alpha=corr.bonferroni_alpha,
             significant_pairs=[_pair_to_schema(p) for p in corr.significant_pairs],
-            method_note=corr.method_note
+            method_note=corr.method_note,
         )
         for p in corr.significant_pairs:
             proven.append(
@@ -354,10 +357,10 @@ def get_advanced_summary(
                         hrv_z_score=s.hrv_z_score,
                         rhr_z_score=s.rhr_z_score,
                         components=s.components,
-                        interpretation=s.interpretation
+                        interpretation=s.interpretation,
                     )
                     for s in scores[:30]
-                ]
+                ],
             )
             proven.append(
                 f"Readiness model: {summary['total_days']} days scored, "
@@ -372,5 +375,5 @@ def get_advanced_summary(
         seasonality_hr=season_hr_result,
         readiness=readiness_result,
         proven_claims=proven,
-        methodology_notes=methodology
+        methodology_notes=methodology,
     )

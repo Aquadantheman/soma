@@ -10,10 +10,10 @@ import hashlib
 import threading
 from typing import Optional, Any, Callable
 from functools import wraps
-from datetime import timedelta
 
 try:
     import redis
+
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
@@ -65,8 +65,14 @@ def get_redis() -> Optional["redis.Redis"]:
                     client.ping()
                     _redis_client = client
                     # Log without exposing password
-                    safe_url = redis_url.split("@")[-1] if "@" in redis_url else redis_url
-                    logger.info("redis_connected", url=safe_url, has_password=bool(redis_password))
+                    safe_url = (
+                        redis_url.split("@")[-1] if "@" in redis_url else redis_url
+                    )
+                    logger.info(
+                        "redis_connected",
+                        url=safe_url,
+                        has_password=bool(redis_password),
+                    )
                 except redis.ConnectionError as e:
                     logger.warning("redis_unavailable", error=str(e))
                     return None
@@ -92,6 +98,7 @@ def is_cache_available() -> bool:
 # ─────────────────────────────────────────────────────────────────────────────
 # CACHE KEYS
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class CacheKeys:
     """Cache key prefixes and builders."""
@@ -125,6 +132,7 @@ class CacheKeys:
 # ─────────────────────────────────────────────────────────────────────────────
 # CACHE OPERATIONS
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def cache_get(key: str) -> Optional[Any]:
     """Get value from cache."""
@@ -211,10 +219,11 @@ def invalidate_baseline_cache(biomarker_slug: Optional[str] = None) -> int:
 # CACHE DECORATOR
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def cached(
     prefix: str,
     ttl_seconds: int = 3600,
-    key_builder: Optional[Callable[..., str]] = None
+    key_builder: Optional[Callable[..., str]] = None,
 ):
     """Decorator to cache function results.
 
@@ -228,6 +237,7 @@ def cached(
         def get_circadian_analysis(db):
             ...
     """
+
     def decorator(func: Callable):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -239,7 +249,7 @@ def cached(
                 params_str = json.dumps(
                     {k: v for k, v in kwargs.items() if k != "db"},
                     sort_keys=True,
-                    default=str
+                    default=str,
                 )
                 params_hash = hashlib.md5(params_str.encode()).hexdigest()[:12]
 
@@ -268,12 +278,14 @@ def cached(
             return result
 
         return wrapper
+
     return decorator
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CACHE STATS
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def get_cache_stats() -> dict:
     """Get cache statistics."""

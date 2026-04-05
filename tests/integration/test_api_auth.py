@@ -47,13 +47,16 @@ class TestPublicEndpoints:
 class TestProtectedEndpointsRequireAuth:
     """Test that protected endpoints reject unauthenticated requests."""
 
-    @pytest.mark.parametrize("endpoint", [
-        "/v1/status",
-        "/v1/biomarkers",
-        "/v1/signals",
-        "/v1/baselines",
-        "/v1/annotations",
-    ])
+    @pytest.mark.parametrize(
+        "endpoint",
+        [
+            "/v1/status",
+            "/v1/biomarkers",
+            "/v1/signals",
+            "/v1/baselines",
+            "/v1/annotations",
+        ],
+    )
     def test_protected_endpoint_requires_auth(self, client, endpoint):
         """Protected endpoints should return 401 without auth."""
         response = client.get(endpoint)
@@ -64,11 +67,14 @@ class TestProtectedEndpointsRequireAuth:
 class TestInvalidAuthentication:
     """Test that invalid authentication is rejected."""
 
-    @pytest.mark.parametrize("endpoint", [
-        "/v1/status",
-        "/v1/biomarkers",
-        "/v1/signals",
-    ])
+    @pytest.mark.parametrize(
+        "endpoint",
+        [
+            "/v1/status",
+            "/v1/biomarkers",
+            "/v1/signals",
+        ],
+    )
     def test_invalid_api_key_rejected(self, invalid_auth_client, endpoint):
         """Invalid API key should be rejected with 401."""
         response = invalid_auth_client.get(endpoint)
@@ -114,29 +120,38 @@ class TestValidAuthentication:
 class TestAnalysisEndpointsAuth:
     """Test authentication for analysis endpoints."""
 
-    @pytest.mark.parametrize("endpoint", [
-        "/v1/analysis/circadian",
-        "/v1/analysis/weekly",
-        "/v1/analysis/hrv",
-        "/v1/analysis/correlations",
-    ])
+    @pytest.mark.parametrize(
+        "endpoint",
+        [
+            "/v1/analysis/circadian",
+            "/v1/analysis/weekly",
+            "/v1/analysis/hrv",
+            "/v1/analysis/correlations",
+        ],
+    )
     def test_analysis_requires_auth(self, client, endpoint):
         """Analysis endpoints should require authentication."""
         response = client.get(endpoint)
         assert response.status_code == 401, f"{endpoint} should require auth"
 
-    @pytest.mark.parametrize("endpoint", [
-        "/v1/analysis/circadian",
-        "/v1/analysis/weekly",
-        "/v1/analysis/hrv",
-        "/v1/analysis/correlations",
-    ])
+    @pytest.mark.parametrize(
+        "endpoint",
+        [
+            "/v1/analysis/circadian",
+            "/v1/analysis/weekly",
+            "/v1/analysis/hrv",
+            "/v1/analysis/correlations",
+        ],
+    )
     def test_analysis_works_with_auth(self, authenticated_client, endpoint):
         """Analysis endpoints should work with authentication (may return 404 if no data)."""
         response = authenticated_client.get(endpoint)
         # Should not return 401 (unauthorized) or 500 (server error)
-        assert response.status_code in [200, 404, 422], \
-            f"{endpoint} returned {response.status_code}"
+        assert response.status_code in [
+            200,
+            404,
+            422,
+        ], f"{endpoint} returned {response.status_code}"
 
 
 class TestJobsEndpointAuth:
@@ -159,28 +174,37 @@ class TestWriteEndpointsAuth:
 
     def test_create_signal_requires_auth(self, client):
         """Creating a signal should require authentication."""
-        response = client.post("/v1/signals", json={
-            "time": "2024-01-01T00:00:00",
-            "biomarker_slug": "heart_rate",
-            "value": 70,
-            "source_slug": "manual",
-        })
+        response = client.post(
+            "/v1/signals",
+            json={
+                "time": "2024-01-01T00:00:00",
+                "biomarker_slug": "heart_rate",
+                "value": 70,
+                "source_slug": "manual",
+            },
+        )
         assert response.status_code == 401
 
     def test_create_annotation_requires_auth(self, client):
         """Creating an annotation should require authentication."""
-        response = client.post("/v1/annotations", json={
-            "time": "2024-01-01T00:00:00",
-            "category": "medication",
-            "label": "Test",
-        })
+        response = client.post(
+            "/v1/annotations",
+            json={
+                "time": "2024-01-01T00:00:00",
+                "category": "medication",
+                "label": "Test",
+            },
+        )
         assert response.status_code == 401
 
     def test_compute_baselines_requires_auth(self, client):
         """Computing baselines should require authentication."""
-        response = client.post("/v1/baselines/compute", json={
-            "window_days": 90,
-        })
+        response = client.post(
+            "/v1/baselines/compute",
+            json={
+                "window_days": 90,
+            },
+        )
         assert response.status_code == 401
 
 

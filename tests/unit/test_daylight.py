@@ -1,19 +1,20 @@
 """Unit tests for daylight exposure analysis."""
 
-import pytest
-import pandas as pd
-import numpy as np
 from datetime import datetime, timedelta
 
+import numpy as np
+import pandas as pd
+import pytest
+
 from soma.statistics.daylight import (
+    DailyDaylight,
+    DaylightBaseline,
+    analyze_daylight_trend,
     compute_daily_daylight,
     compute_daylight_baseline,
     compute_daylight_deviation,
-    analyze_daylight_trend,
     compute_daylight_sleep_correlation,
     generate_daylight_report,
-    DailyDaylight,
-    DaylightBaseline,
 )
 
 
@@ -31,31 +32,37 @@ def make_daylight_data(n_days: int = 30, seed: int = 42) -> pd.DataFrame:
         morning_min = np.random.exponential(20)  # Most days some, few days lots
         if np.random.random() < 0.7:  # 70% chance of morning exposure
             for chunk in range(int(morning_min // 10) + 1):
-                records.append({
-                    'time': day_date.replace(hour=7 + chunk % 3),
-                    'biomarker_slug': 'time_in_daylight',
-                    'value': min(10, morning_min - chunk * 10)
-                })
+                records.append(
+                    {
+                        "time": day_date.replace(hour=7 + chunk % 3),
+                        "biomarker_slug": "time_in_daylight",
+                        "value": min(10, morning_min - chunk * 10),
+                    }
+                )
 
         # Midday exposure (10am-2pm): 0-45 min
         midday_min = np.random.normal(25, 15)
         midday_min = max(0, midday_min)
         if midday_min > 0:
-            records.append({
-                'time': day_date.replace(hour=12),
-                'biomarker_slug': 'time_in_daylight',
-                'value': midday_min
-            })
+            records.append(
+                {
+                    "time": day_date.replace(hour=12),
+                    "biomarker_slug": "time_in_daylight",
+                    "value": midday_min,
+                }
+            )
 
         # Afternoon exposure (2pm+): 0-30 min
         afternoon_min = np.random.normal(15, 10)
         afternoon_min = max(0, afternoon_min)
         if afternoon_min > 0:
-            records.append({
-                'time': day_date.replace(hour=15),
-                'biomarker_slug': 'time_in_daylight',
-                'value': afternoon_min
-            })
+            records.append(
+                {
+                    "time": day_date.replace(hour=15),
+                    "biomarker_slug": "time_in_daylight",
+                    "value": afternoon_min,
+                }
+            )
 
     return pd.DataFrame(records)
 
@@ -79,16 +86,12 @@ def make_sleep_data(n_nights: int = 30, seed: int = 42) -> pd.DataFrame:
         in_bed_min = total_sleep * np.random.uniform(1.05, 1.15)
 
         for slug, value in [
-            ('sleep_rem', rem_min),
-            ('sleep_deep', deep_min),
-            ('sleep_core', core_min),
-            ('sleep_in_bed', in_bed_min)
+            ("sleep_rem", rem_min),
+            ("sleep_deep", deep_min),
+            ("sleep_core", core_min),
+            ("sleep_in_bed", in_bed_min),
         ]:
-            records.append({
-                'time': bed_time,
-                'biomarker_slug': slug,
-                'value': value
-            })
+            records.append({"time": bed_time, "biomarker_slug": slug, "value": value})
 
     return pd.DataFrame(records)
 
@@ -129,7 +132,7 @@ class TestComputeDailyDaylight:
 
     def test_returns_empty_for_no_data(self):
         """Should return empty list for no data."""
-        df = pd.DataFrame(columns=['time', 'biomarker_slug', 'value'])
+        df = pd.DataFrame(columns=["time", "biomarker_slug", "value"])
         daily = compute_daily_daylight(df)
         assert daily == []
 
@@ -222,7 +225,7 @@ class TestComputeDaylightDeviation:
             morning_min=0,
             midday_min=3,
             afternoon_min=2,
-            has_morning_exposure=False
+            has_morning_exposure=False,
         )
 
         deviation = compute_daylight_deviation(low_day, baseline)
@@ -251,7 +254,7 @@ class TestAnalyzeDaylightTrend:
         trend = analyze_daylight_trend(df, period_days=30)
 
         assert trend is not None
-        assert trend.direction in ['increasing', 'decreasing', 'stable']
+        assert trend.direction in ["increasing", "decreasing", "stable"]
 
     def test_returns_none_with_insufficient_data(self):
         """Should return None with insufficient data."""
@@ -269,9 +272,7 @@ class TestComputeDaylightSleepCorrelation:
         sleep_df = make_sleep_data(n_nights=60)
 
         corr = compute_daylight_sleep_correlation(
-            daylight_df, sleep_df,
-            sleep_metric='total_sleep_min',
-            lag_days=0
+            daylight_df, sleep_df, sleep_metric="total_sleep_min", lag_days=0
         )
 
         assert corr is not None
@@ -285,15 +286,11 @@ class TestComputeDaylightSleepCorrelation:
         sleep_df = make_sleep_data(n_nights=60)
 
         corr_same = compute_daylight_sleep_correlation(
-            daylight_df, sleep_df,
-            sleep_metric='total_sleep_min',
-            lag_days=0
+            daylight_df, sleep_df, sleep_metric="total_sleep_min", lag_days=0
         )
 
         corr_next = compute_daylight_sleep_correlation(
-            daylight_df, sleep_df,
-            sleep_metric='total_sleep_min',
-            lag_days=1
+            daylight_df, sleep_df, sleep_metric="total_sleep_min", lag_days=1
         )
 
         assert corr_same is not None
@@ -308,9 +305,7 @@ class TestComputeDaylightSleepCorrelation:
         sleep_df = make_sleep_data(n_nights=5)
 
         corr = compute_daylight_sleep_correlation(
-            daylight_df, sleep_df,
-            sleep_metric='total_sleep_min',
-            lag_days=0
+            daylight_df, sleep_df, sleep_metric="total_sleep_min", lag_days=0
         )
 
         assert corr is None
@@ -359,7 +354,7 @@ class TestGenerateDaylightReport:
 
     def test_handles_no_data(self):
         """Should handle empty data gracefully."""
-        df = pd.DataFrame(columns=['time', 'biomarker_slug', 'value'])
+        df = pd.DataFrame(columns=["time", "biomarker_slug", "value"])
         report = generate_daylight_report(df)
 
         assert report is not None
@@ -379,11 +374,13 @@ class TestDaylightRecommendations:
 
         for day in range(60):
             day_date = base_date + timedelta(days=day)
-            records.append({
-                'time': day_date.replace(hour=12),
-                'biomarker_slug': 'time_in_daylight',
-                'value': np.random.uniform(5, 15)  # Very low
-            })
+            records.append(
+                {
+                    "time": day_date.replace(hour=12),
+                    "biomarker_slug": "time_in_daylight",
+                    "value": np.random.uniform(5, 15),  # Very low
+                }
+            )
 
         df = pd.DataFrame(records)
         report = generate_daylight_report(df)
@@ -392,7 +389,9 @@ class TestDaylightRecommendations:
         assert report.baseline is not None
         assert report.baseline.total_daylight.mean < 30
         # Should have a concern about low exposure
-        assert any('daylight' in c.lower() or 'low' in c.lower() for c in report.concerns)
+        assert any(
+            "daylight" in c.lower() or "low" in c.lower() for c in report.concerns
+        )
 
     def test_flags_low_morning_light(self):
         """Should flag when less than 50% of days have morning light."""
@@ -404,11 +403,13 @@ class TestDaylightRecommendations:
         for day in range(60):
             day_date = base_date + timedelta(days=day)
             # Only afternoon exposure
-            records.append({
-                'time': day_date.replace(hour=15),
-                'biomarker_slug': 'time_in_daylight',
-                'value': np.random.uniform(30, 60)
-            })
+            records.append(
+                {
+                    "time": day_date.replace(hour=15),
+                    "biomarker_slug": "time_in_daylight",
+                    "value": np.random.uniform(30, 60),
+                }
+            )
 
         df = pd.DataFrame(records)
         report = generate_daylight_report(df)
@@ -417,7 +418,7 @@ class TestDaylightRecommendations:
         assert report.baseline is not None
         assert report.baseline.pct_days_with_morning_light < 50
         # Should have a concern about morning light
-        assert any('morning' in c.lower() for c in report.concerns)
+        assert any("morning" in c.lower() for c in report.concerns)
 
     def test_recognizes_good_patterns(self):
         """Should recognize healthy daylight patterns."""
@@ -429,17 +430,21 @@ class TestDaylightRecommendations:
         for day in range(60):
             day_date = base_date + timedelta(days=day)
             # Good morning exposure
-            records.append({
-                'time': day_date.replace(hour=8),
-                'biomarker_slug': 'time_in_daylight',
-                'value': np.random.uniform(25, 40)
-            })
+            records.append(
+                {
+                    "time": day_date.replace(hour=8),
+                    "biomarker_slug": "time_in_daylight",
+                    "value": np.random.uniform(25, 40),
+                }
+            )
             # Midday exposure
-            records.append({
-                'time': day_date.replace(hour=12),
-                'biomarker_slug': 'time_in_daylight',
-                'value': np.random.uniform(20, 35)
-            })
+            records.append(
+                {
+                    "time": day_date.replace(hour=12),
+                    "biomarker_slug": "time_in_daylight",
+                    "value": np.random.uniform(20, 35),
+                }
+            )
 
         df = pd.DataFrame(records)
         report = generate_daylight_report(df)

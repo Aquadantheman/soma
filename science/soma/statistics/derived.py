@@ -10,10 +10,10 @@ import pandas as pd
 import numpy as np
 from scipy import stats
 
-
 # ============================================
 # TIER 1: HIGH VALUE METRICS
 # ============================================
+
 
 @dataclass
 class NocturnalDipResult:
@@ -22,6 +22,7 @@ class NocturnalDipResult:
     Non-dipping (<10%) is associated with cardiovascular risk.
     Normal dipping is 10-20%.
     """
+
     day_hr_mean: float
     night_hr_mean: float
     dip_percent: float
@@ -37,6 +38,7 @@ class TrainingLoadResult:
 
     Sweet spot is 0.8-1.3. Outside this range increases injury risk.
     """
+
     acute_load: float  # 7-day EWMA
     chronic_load: float  # 28-day EWMA
     ratio: float
@@ -52,6 +54,7 @@ class AutonomicBalanceResult:
 
     Higher values indicate better parasympathetic (rest/recovery) tone.
     """
+
     hrv_mean: float
     rhr_mean: float
     ratio: float
@@ -68,6 +71,7 @@ class StressIndexResult:
     Combines HRV (inverted), RHR, and respiratory rate into single score.
     Higher = more stress.
     """
+
     score: float  # Z-score based
     hrv_component: float
     rhr_component: float
@@ -85,6 +89,7 @@ class BehavioralRegularityResult:
     Lower coefficient of variation = more regular routine.
     Routine disruption often precedes mood episodes.
     """
+
     mean_cv: float  # 7-day rolling coefficient of variation
     current_cv: float  # Most recent 7 days
     stability_score: float  # 0-100, higher = more stable
@@ -97,12 +102,14 @@ class BehavioralRegularityResult:
 # TIER 2: PERSONAL TRACKING METRICS
 # ============================================
 
+
 @dataclass
 class CardiovascularEfficiencyResult:
     """Activity output relative to heart rate cost.
 
     Higher efficiency = more activity for less cardiac effort.
     """
+
     efficiency_score: float  # Z-score based
     efficiency_percentile: float
     trend_30d: Optional[float]
@@ -117,6 +124,7 @@ class StrainIndexResult:
 
     High activity + high HR = high strain day.
     """
+
     mean_strain: float
     current_strain: float
     high_strain_days: int
@@ -131,6 +139,7 @@ class RecoveryTrendResult:
 
     Improving: HRV going up, RHR going down.
     """
+
     hrv_trend: float  # 7-day slope
     rhr_trend: float  # 7-day slope
     recovery_direction: str  # "improving", "stable", "declining"
@@ -146,6 +155,7 @@ class CircadianAmplitudeResult:
 
     Higher amplitude = stronger circadian rhythm.
     """
+
     current_amplitude: float  # Recent month
     historical_amplitude: float  # First available data
     change_percent: float
@@ -157,6 +167,7 @@ class CircadianAmplitudeResult:
 @dataclass
 class EnergyDistributionResult:
     """Morning vs afternoon energy expenditure pattern."""
+
     morning_mean: float
     afternoon_mean: float
     ratio: float  # >1 = morning person
@@ -169,9 +180,11 @@ class EnergyDistributionResult:
 # TIER 3: EXPERIMENTAL METRICS
 # ============================================
 
+
 @dataclass
 class NightRestlessnessResult:
     """Activity during expected sleep hours (0-5 AM)."""
+
     mean_night_activity: float
     restless_nights: int  # >100 cal
     total_nights: int
@@ -183,6 +196,7 @@ class NightRestlessnessResult:
 @dataclass
 class PhysiologicalCoherenceResult:
     """How well do HRV, RHR, and activity move together as expected."""
+
     coherence_score: float  # -1 to 1
     hrv_rhr_correlation: float  # Should be negative
     hrv_activity_correlation: float  # Should be positive
@@ -193,6 +207,7 @@ class PhysiologicalCoherenceResult:
 @dataclass
 class DerivedMetricsReport:
     """Complete derived metrics analysis."""
+
     # Tier 1
     nocturnal_dip: Optional[NocturnalDipResult]
     training_load: Optional[TrainingLoadResult]
@@ -261,7 +276,9 @@ def analyze_nocturnal_dip(df: pd.DataFrame) -> Optional[NocturnalDipResult]:
         clinical_note = "Normal dipping pattern - healthy cardiovascular sign"
     elif dip_pct >= 0:
         classification = "non-dipper"
-        clinical_note = "Non-dipping (<10%) is associated with increased cardiovascular risk"
+        clinical_note = (
+            "Non-dipping (<10%) is associated with increased cardiovascular risk"
+        )
     else:
         classification = "reverse-dipper"
         clinical_note = "Reverse dipping (night HR > day HR) warrants medical attention"
@@ -273,7 +290,7 @@ def analyze_nocturnal_dip(df: pd.DataFrame) -> Optional[NocturnalDipResult]:
         classification=classification,
         n_days=int(mask.sum()),
         is_concerning=dip_pct < 10,
-        clinical_note=clinical_note
+        clinical_note=clinical_note,
     )
 
 
@@ -321,7 +338,7 @@ def analyze_training_load(df: pd.DataFrame) -> Optional[TrainingLoadResult]:
         classification=classification,
         days_in_risky_zone=int(risky),
         total_days=len(ratio),
-        risk_percent=float(risky / len(ratio) * 100)
+        risk_percent=float(risky / len(ratio) * 100),
     )
 
 
@@ -380,7 +397,7 @@ def analyze_autonomic_balance(df: pd.DataFrame) -> Optional[AutonomicBalanceResu
         ratio_trend_30d=trend_30d,
         percentile=percentile,
         n_days=len(combined),
-        assessment=assessment
+        assessment=assessment,
     )
 
 
@@ -398,15 +415,17 @@ def analyze_stress_index(df: pd.DataFrame) -> Optional[StressIndexResult]:
             d["time"] = pd.to_datetime(d["time"], utc=True)
             d["date"] = d["time"].dt.date
 
-    daily_hrv = hrv_data.groupby("date")["value"].mean() if len(hrv_data) > 0 else pd.Series()
-    daily_rhr = rhr_data.groupby("date")["value"].mean() if len(rhr_data) > 0 else pd.Series()
-    daily_rr = rr_data.groupby("date")["value"].mean() if len(rr_data) > 0 else pd.Series()
+    daily_hrv = (
+        hrv_data.groupby("date")["value"].mean() if len(hrv_data) > 0 else pd.Series()
+    )
+    daily_rhr = (
+        rhr_data.groupby("date")["value"].mean() if len(rhr_data) > 0 else pd.Series()
+    )
+    daily_rr = (
+        rr_data.groupby("date")["value"].mean() if len(rr_data) > 0 else pd.Series()
+    )
 
-    combined = pd.DataFrame({
-        "hrv": daily_hrv,
-        "rhr": daily_rhr,
-        "rr": daily_rr
-    })
+    combined = pd.DataFrame({"hrv": daily_hrv, "rhr": daily_rhr, "rr": daily_rr})
 
     # Need at least HRV and RHR
     mask = combined["hrv"].notna() & combined["rhr"].notna()
@@ -452,11 +471,13 @@ def analyze_stress_index(df: pd.DataFrame) -> Optional[StressIndexResult]:
         classification=classification,
         high_stress_days=high_stress_days,
         total_days=len(stress),
-        n_metrics_used=n_metrics
+        n_metrics_used=n_metrics,
     )
 
 
-def analyze_behavioral_regularity(df: pd.DataFrame) -> Optional[BehavioralRegularityResult]:
+def analyze_behavioral_regularity(
+    df: pd.DataFrame,
+) -> Optional[BehavioralRegularityResult]:
     """Analyze consistency of daily activity patterns."""
     steps_data = df[df["biomarker_slug"] == "steps"].copy()
 
@@ -507,11 +528,13 @@ def analyze_behavioral_regularity(df: pd.DataFrame) -> Optional[BehavioralRegula
         stability_score=stability,
         disruption_days=disruption_days,
         total_days=len(cv),
-        trend=trend
+        trend=trend,
     )
 
 
-def analyze_cardiovascular_efficiency(df: pd.DataFrame) -> Optional[CardiovascularEfficiencyResult]:
+def analyze_cardiovascular_efficiency(
+    df: pd.DataFrame,
+) -> Optional[CardiovascularEfficiencyResult]:
     """Analyze activity output relative to heart rate cost."""
     ae_data = df[df["biomarker_slug"] == "active_energy"].copy()
     hr_data = df[df["biomarker_slug"] == "heart_rate"].copy()
@@ -556,7 +579,7 @@ def analyze_cardiovascular_efficiency(df: pd.DataFrame) -> Optional[Cardiovascul
         trend_30d=trend_30d,
         best_day_score=float(efficiency.max()),
         worst_day_score=float(efficiency.min()),
-        n_days=len(efficiency)
+        n_days=len(efficiency),
     )
 
 
@@ -610,7 +633,7 @@ def analyze_strain_index(df: pd.DataFrame) -> Optional[StrainIndexResult]:
         high_strain_days=high_strain,
         low_strain_days=low_strain,
         total_days=len(strain),
-        strain_trend_7d=trend
+        strain_trend_7d=trend,
     )
 
 
@@ -687,7 +710,7 @@ def analyze_recovery_trend(df: pd.DataFrame) -> Optional[RecoveryTrendResult]:
         days_improving=improving,
         days_declining=declining,
         total_days=len(combined),
-        confidence=confidence
+        confidence=confidence,
     )
 
 
@@ -741,7 +764,7 @@ def analyze_circadian_amplitude(df: pd.DataFrame) -> Optional[CircadianAmplitude
         change_percent=change_pct,
         trend=trend,
         monthly_values=monthly,
-        is_healthy=is_healthy
+        is_healthy=is_healthy,
     )
 
 
@@ -756,7 +779,9 @@ def analyze_energy_distribution(df: pd.DataFrame) -> Optional[EnergyDistribution
     ae_data["date"] = ae_data["time"].dt.date
     ae_data["hour"] = ae_data["time"].dt.hour
     ae_data["period"] = ae_data["hour"].apply(
-        lambda h: "morning" if 6 <= h < 12 else ("afternoon" if 12 <= h < 18 else "other")
+        lambda h: (
+            "morning" if 6 <= h < 12 else ("afternoon" if 12 <= h < 18 else "other")
+        )
     )
 
     period_sums = ae_data.groupby(["date", "period"])["value"].sum().unstack()
@@ -795,7 +820,7 @@ def analyze_energy_distribution(df: pd.DataFrame) -> Optional[EnergyDistribution
         ratio=ratio,
         chronotype=chronotype,
         consistency=consistency,
-        n_days=int(mask.sum())
+        n_days=int(mask.sum()),
     )
 
 
@@ -838,11 +863,13 @@ def analyze_night_restlessness(df: pd.DataFrame) -> Optional[NightRestlessnessRe
         total_nights=len(daily_night),
         restless_percent=float(restless / len(daily_night) * 100),
         trend=trend,
-        worst_night=float(daily_night.max())
+        worst_night=float(daily_night.max()),
     )
 
 
-def analyze_physiological_coherence(df: pd.DataFrame) -> Optional[PhysiologicalCoherenceResult]:
+def analyze_physiological_coherence(
+    df: pd.DataFrame,
+) -> Optional[PhysiologicalCoherenceResult]:
     """Analyze how well HRV, RHR, and activity move together as expected."""
     df = _fix_hrv_units(df)
 
@@ -859,11 +886,9 @@ def analyze_physiological_coherence(df: pd.DataFrame) -> Optional[PhysiologicalC
     daily_rhr = rhr_data.groupby("date")["value"].mean()
     daily_steps = steps_data.groupby("date")["value"].sum()
 
-    combined = pd.DataFrame({
-        "hrv": daily_hrv,
-        "rhr": daily_rhr,
-        "steps": daily_steps
-    }).dropna()
+    combined = pd.DataFrame(
+        {"hrv": daily_hrv, "rhr": daily_rhr, "steps": daily_steps}
+    ).dropna()
 
     if len(combined) < 50:
         return None
@@ -885,7 +910,7 @@ def analyze_physiological_coherence(df: pd.DataFrame) -> Optional[PhysiologicalC
         hrv_rhr_correlation=float(hrv_rhr_corr),
         hrv_activity_correlation=float(hrv_steps_corr),
         is_coherent=is_coherent,
-        n_days=len(combined)
+        n_days=len(combined),
     )
 
 
@@ -912,13 +937,17 @@ def generate_derived_metrics_report(df: pd.DataFrame) -> DerivedMetricsReport:
 
     if nocturnal:
         if nocturnal.is_concerning:
-            concerns.append(f"Low nocturnal HR dip ({nocturnal.dip_percent:.1f}%) - {nocturnal.clinical_note}")
+            concerns.append(
+                f"Low nocturnal HR dip ({nocturnal.dip_percent:.1f}%) - {nocturnal.clinical_note}"
+            )
         else:
             positives.append(f"Healthy nocturnal HR dip ({nocturnal.dip_percent:.1f}%)")
 
     if training:
         if training.classification in ["overreaching", "dangerous"]:
-            concerns.append(f"Training load {training.classification} (ratio: {training.ratio:.2f})")
+            concerns.append(
+                f"Training load {training.classification} (ratio: {training.ratio:.2f})"
+            )
         elif training.classification == "optimal":
             positives.append(f"Optimal training load (ratio: {training.ratio:.2f})")
 
@@ -932,11 +961,15 @@ def generate_derived_metrics_report(df: pd.DataFrame) -> DerivedMetricsReport:
         if regularity.trend == "destabilizing":
             concerns.append("Behavioral patterns destabilizing")
         elif regularity.stability_score >= 70:
-            positives.append(f"Good behavioral regularity (score: {regularity.stability_score:.0f})")
+            positives.append(
+                f"Good behavioral regularity (score: {regularity.stability_score:.0f})"
+            )
 
     if night:
         if night.restless_percent > 30:
-            concerns.append(f"Frequent night restlessness ({night.restless_percent:.0f}% of nights)")
+            concerns.append(
+                f"Frequent night restlessness ({night.restless_percent:.0f}% of nights)"
+            )
 
     if recovery:
         if recovery.recovery_direction == "declining":
@@ -946,7 +979,9 @@ def generate_derived_metrics_report(df: pd.DataFrame) -> DerivedMetricsReport:
 
     if circadian:
         if circadian.trend == "strengthening":
-            positives.append(f"Circadian amplitude strengthening (+{circadian.change_percent:.0f}%)")
+            positives.append(
+                f"Circadian amplitude strengthening (+{circadian.change_percent:.0f}%)"
+            )
         elif circadian.trend == "weakening":
             concerns.append("Circadian rhythm weakening")
 
@@ -968,5 +1003,5 @@ def generate_derived_metrics_report(df: pd.DataFrame) -> DerivedMetricsReport:
         night_restlessness=night,
         physiological_coherence=coherence,
         concerns=concerns,
-        positive_findings=positives
+        positive_findings=positives,
     )

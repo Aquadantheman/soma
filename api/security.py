@@ -22,6 +22,7 @@ logger = get_logger("security")
 # SECURITY HEADERS MIDDLEWARE
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Add security headers to all responses.
 
@@ -58,16 +59,22 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
 
         # Content Security Policy for API (restrictive since we're an API)
-        response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'none'; frame-ancestors 'none'"
+        )
 
         # Prevent caching of API responses (they may contain sensitive data)
         if "Cache-Control" not in response.headers:
-            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, private"
+            response.headers["Cache-Control"] = (
+                "no-store, no-cache, must-revalidate, private"
+            )
             response.headers["Pragma"] = "no-cache"
 
         # HSTS in production (force HTTPS)
         if self.is_production:
-            response.headers["Strict-Transport-Security"] = f"max-age={self.hsts_max_age}; includeSubDomains"
+            response.headers["Strict-Transport-Security"] = (
+                f"max-age={self.hsts_max_age}; includeSubDomains"
+            )
 
         # Remove server header if present (hide server info)
         if "Server" in response.headers:
@@ -80,12 +87,13 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 # AUDIT LOGGING
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def audit_log(
     action: str,
     resource: str,
     details: dict = None,
     request: Request = None,
-    success: bool = True
+    success: bool = True,
 ):
     """Log security-relevant actions for audit trail.
 
@@ -111,7 +119,8 @@ def audit_log(
     if details:
         # Don't log sensitive data
         safe_details = {
-            k: v for k, v in details.items()
+            k: v
+            for k, v in details.items()
             if k not in ("password", "api_key", "token", "secret")
         }
         log_data["details"] = safe_details
@@ -128,6 +137,7 @@ def audit_log(
 
         # Hash IP for privacy in logs
         import hashlib
+
         log_data["client_ip_hash"] = hashlib.sha256(client_ip.encode()).hexdigest()[:12]
         log_data["path"] = str(request.url.path)
         log_data["method"] = request.method
@@ -141,6 +151,7 @@ def audit_log(
 # ─────────────────────────────────────────────────────────────────────────────
 # ERROR HANDLING
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def get_safe_error_message(exc: Exception, is_production: bool = None) -> str:
     """Get a safe error message that doesn't leak internal details.
@@ -173,10 +184,7 @@ def get_safe_error_message(exc: Exception, is_production: bool = None) -> str:
 
 
 def create_error_response(
-    status_code: int,
-    message: str,
-    error_type: str = None,
-    request_id: str = None
+    status_code: int, message: str, error_type: str = None, request_id: str = None
 ) -> dict:
     """Create a standardized error response.
 

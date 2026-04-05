@@ -1,16 +1,14 @@
 """Unit tests for baseline model functions."""
 
-import pytest
-import pandas as pd
 import numpy as np
-from datetime import datetime, timedelta
+import pandas as pd
+import pytest
 
 from soma.baseline.model import (
-    compute_baseline,
-    compute_deviation,
     BiomarkerBaseline,
     DeviationResult,
-    MIN_BASELINE_DAYS,
+    compute_baseline,
+    compute_deviation,
 )
 
 
@@ -19,11 +17,9 @@ def make_baseline_df(biomarker_slug: str, n_days: int, mean: float, std: float):
     np.random.seed(42)
     dates = pd.date_range(end=pd.Timestamp.now(), periods=n_days, freq="D")
     values = np.random.normal(mean, std, n_days)
-    return pd.DataFrame({
-        "time": dates,
-        "biomarker_slug": biomarker_slug,
-        "value": values
-    })
+    return pd.DataFrame(
+        {"time": dates, "biomarker_slug": biomarker_slug, "value": values}
+    )
 
 
 class TestComputeBaseline:
@@ -32,11 +28,13 @@ class TestComputeBaseline:
     def test_returns_none_with_insufficient_days(self):
         """Should return None when there are fewer than MIN_BASELINE_DAYS."""
         dates = pd.date_range(start="2023-01-01", periods=10, freq="D")
-        df = pd.DataFrame({
-            "time": dates,
-            "biomarker_slug": "heart_rate",
-            "value": np.random.normal(70, 5, 10)
-        })
+        df = pd.DataFrame(
+            {
+                "time": dates,
+                "biomarker_slug": "heart_rate",
+                "value": np.random.normal(70, 5, 10),
+            }
+        )
 
         result = compute_baseline(df, "heart_rate")
         assert result is None
@@ -92,11 +90,9 @@ class TestComputeBaseline:
         # Clear upward trend
         values = 60 + 0.2 * np.arange(90) + np.random.normal(0, 2, 90)
 
-        df = pd.DataFrame({
-            "time": dates,
-            "biomarker_slug": "heart_rate",
-            "value": values
-        })
+        df = pd.DataFrame(
+            {"time": dates, "biomarker_slug": "heart_rate", "value": values}
+        )
 
         result = compute_baseline(df, "heart_rate")
 
@@ -136,7 +132,7 @@ class TestComputeDeviation:
             is_stable=True,
             coefficient_of_variation=0.07,
             trend_direction="stable",
-            trend_magnitude=0.0
+            trend_magnitude=0.0,
         )
 
     def test_computes_z_score(self, sample_baseline):

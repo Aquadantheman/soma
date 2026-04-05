@@ -32,9 +32,11 @@ logger = get_logger("rate_limit")
 # CONFIGURATION
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 @dataclass
 class RateLimitConfig:
     """Rate limiting configuration."""
+
     # Enabled flag
     enabled: bool = True
 
@@ -81,6 +83,7 @@ def get_rate_limit_config() -> RateLimitConfig:
 # IN-MEMORY FALLBACK (when Redis unavailable)
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class InMemoryRateLimiter:
     """Simple in-memory rate limiter for single-instance deployments."""
 
@@ -99,8 +102,7 @@ class InMemoryRateLimiter:
         cutoff = now - (window_seconds * 2)  # Keep 2x window for safety
         for key in list(self._requests.keys()):
             self._requests[key] = [
-                (ts, count) for ts, count in self._requests[key]
-                if ts > cutoff
+                (ts, count) for ts, count in self._requests[key] if ts > cutoff
             ]
             if not self._requests[key]:
                 del self._requests[key]
@@ -119,10 +121,7 @@ class InMemoryRateLimiter:
         window_start = now - window_seconds
 
         # Count requests in window
-        count = sum(
-            c for ts, c in self._requests[key]
-            if ts > window_start
-        )
+        count = sum(c for ts, c in self._requests[key] if ts > window_start)
 
         remaining = max(0, limit - count - 1)
 
@@ -142,10 +141,9 @@ _memory_limiter = InMemoryRateLimiter()
 # REDIS RATE LIMITER
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def _redis_check_rate_limit(
-    key: str,
-    limit: int,
-    window_seconds: int
+    key: str, limit: int, window_seconds: int
 ) -> tuple[bool, int]:
     """Check rate limit using Redis sliding window.
 
@@ -198,6 +196,7 @@ def _redis_check_rate_limit(
 # ─────────────────────────────────────────────────────────────────────────────
 # RATE LIMIT MIDDLEWARE
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def get_client_ip(request: Request) -> str:
     """Extract client IP from request, handling proxies."""
@@ -282,7 +281,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 path=path,
                 ip_hash=hashlib.sha256(ip.encode()).hexdigest()[:8],
                 limit=limit,
-                window=window
+                window=window,
             )
             return Response(
                 content='{"detail": "Rate limit exceeded. Please slow down."}',
@@ -293,7 +292,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     "X-RateLimit-Limit": str(limit),
                     "X-RateLimit-Remaining": "0",
                     "X-RateLimit-Reset": str(int(time.time()) + window),
-                }
+                },
             )
 
         # Process request
@@ -311,6 +310,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 # ENDPOINT DECORATOR (for fine-grained control)
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def rate_limit(limit: int = 10, window_seconds: int = 60):
     """Decorator for endpoint-specific rate limiting.
 
@@ -322,6 +322,7 @@ def rate_limit(limit: int = 10, window_seconds: int = 60):
         async def expensive_operation():
             ...
     """
+
     def decorator(func: Callable):
         @wraps(func)
         async def wrapper(*args, request: Request = None, **kwargs):
@@ -335,10 +336,11 @@ def rate_limit(limit: int = 10, window_seconds: int = 60):
                     raise HTTPException(
                         status_code=429,
                         detail="Rate limit exceeded for this operation",
-                        headers={"Retry-After": str(window_seconds)}
+                        headers={"Retry-After": str(window_seconds)},
                     )
 
             return await func(*args, request=request, **kwargs)
 
         return wrapper
+
     return decorator

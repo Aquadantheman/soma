@@ -4,6 +4,7 @@ Provides authenticated and unauthenticated test clients for API testing.
 """
 
 import os
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -14,8 +15,7 @@ os.environ["SOMA_AUTH_MODE"] = "api_key"
 os.environ["SOMA_API_KEY"] = TEST_API_KEY
 os.environ["SOMA_ALLOW_API_KEY_QUERY"] = "false"
 
-from api.main import app
-from api.auth import get_auth_config, _auth_config
+from api.main import app  # noqa: E402
 
 
 @pytest.fixture(scope="module")

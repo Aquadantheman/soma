@@ -5,6 +5,7 @@ Provides queue access and job management utilities.
 
 import os
 import threading
+from datetime import timedelta
 from typing import Optional, Any, Callable
 from dataclasses import dataclass
 from enum import Enum
@@ -13,6 +14,7 @@ try:
     import redis
     from rq import Queue, Retry
     from rq.job import Job
+
     RQ_AVAILABLE = True
 except ImportError:
     RQ_AVAILABLE = False
@@ -64,8 +66,14 @@ def get_connection() -> Optional["redis.Redis"]:
                     conn.ping()
                     _redis_conn = conn
                     # Log without exposing password
-                    safe_url = redis_url.split("@")[-1] if "@" in redis_url else redis_url
-                    logger.info("job_queue_connected", url=safe_url, has_password=bool(redis_password))
+                    safe_url = (
+                        redis_url.split("@")[-1] if "@" in redis_url else redis_url
+                    )
+                    logger.info(
+                        "job_queue_connected",
+                        url=safe_url,
+                        has_password=bool(redis_password),
+                    )
                 except redis.ConnectionError as e:
                     logger.warning("job_queue_unavailable", error=str(e))
                     return None
@@ -80,8 +88,10 @@ def get_connection() -> Optional["redis.Redis"]:
 # QUEUE MANAGEMENT
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class QueueName:
     """Queue names for different job types."""
+
     DEFAULT = "soma:default"
     HIGH = "soma:high"
     LOW = "soma:low"
@@ -110,8 +120,10 @@ def get_queue(name: str = QueueName.DEFAULT) -> Optional["Queue"]:
 # JOB STATUS
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class JobStatus(str, Enum):
     """Job status enumeration."""
+
     QUEUED = "queued"
     STARTED = "started"
     FINISHED = "finished"
@@ -127,6 +139,7 @@ class JobStatus(str, Enum):
 @dataclass
 class JobInfo:
     """Job information container."""
+
     job_id: str
     status: JobStatus
     result: Optional[Any] = None
@@ -173,13 +186,14 @@ def get_job_status(job_id: str) -> JobInfo:
 # JOB ENQUEUEING
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def enqueue_job(
     func: Callable,
     *args,
     queue_name: str = QueueName.DEFAULT,
     job_timeout: int = 600,
     retry: int = 0,
-    **kwargs
+    **kwargs,
 ) -> Optional[str]:
     """Enqueue a job for background processing.
 
@@ -202,18 +216,9 @@ def enqueue_job(
     try:
         retry_config = Retry(max=retry) if retry > 0 else None
         job = queue.enqueue(
-            func,
-            *args,
-            job_timeout=job_timeout,
-            retry=retry_config,
-            **kwargs
+            func, *args, job_timeout=job_timeout, retry=retry_config, **kwargs
         )
-        logger.info(
-            "job_enqueued",
-            job_id=job.id,
-            func=func.__name__,
-            queue=queue_name
-        )
+        logger.info("job_enqueued", job_id=job.id, func=func.__name__, queue=queue_name)
         return job.id
     except Exception as e:
         logger.error("job_enqueue_failed", func=func.__name__, error=str(e))
@@ -225,7 +230,7 @@ def enqueue_in(
     func: Callable,
     *args,
     queue_name: str = QueueName.SCHEDULED,
-    **kwargs
+    **kwargs,
 ) -> Optional[str]:
     """Schedule a job to run after a delay.
 
@@ -244,22 +249,14 @@ def enqueue_in(
         return None
 
     try:
-        job = queue.enqueue_in(
-            timedelta(seconds=delay_seconds),
-            func,
-            *args,
-            **kwargs
-        )
+        job = queue.enqueue_in(timedelta(seconds=delay_seconds), func, *args, **kwargs)
         logger.info(
             "job_scheduled",
             job_id=job.id,
             func=func.__name__,
-            delay_seconds=delay_seconds
+            delay_seconds=delay_seconds,
         )
         return job.id
     except Exception as e:
         logger.error("job_schedule_failed", func=func.__name__, error=str(e))
         return None
-
-
-from datetime import timedelta

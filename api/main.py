@@ -11,16 +11,13 @@ Or:
 """
 
 import os
-from fastapi import FastAPI, Response, Depends
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
 from .auth import (
     get_auth_config,
-    require_auth,
-    optional_auth,
     print_auth_info,
-    AuthMode,
 )
 from .observability import (
     configure_logging,
@@ -89,20 +86,15 @@ it's normal *for you*.
 
 # CORS configuration from environment
 cors_origins = os.getenv(
-    "SOMA_CORS_ORIGINS",
-    "http://localhost:3000,http://localhost:5173"
+    "SOMA_CORS_ORIGINS", "http://localhost:3000,http://localhost:5173"
 ).split(",")
 
 # Allowed methods - be explicit instead of wildcard
-cors_methods = os.getenv(
-    "SOMA_CORS_METHODS",
-    "GET,POST,PUT,DELETE,OPTIONS"
-).split(",")
+cors_methods = os.getenv("SOMA_CORS_METHODS", "GET,POST,PUT,DELETE,OPTIONS").split(",")
 
 # Allowed headers - include auth header
 cors_headers = os.getenv(
-    "SOMA_CORS_HEADERS",
-    "Content-Type,Authorization,X-API-Key"
+    "SOMA_CORS_HEADERS", "Content-Type,Authorization,X-API-Key"
 ).split(",")
 
 app.add_middleware(
@@ -127,7 +119,7 @@ if rate_limit_config.enabled:
     logger.info(
         "rate_limiting_enabled",
         default_limit=rate_limit_config.default_limit,
-        window_seconds=rate_limit_config.default_window_seconds
+        window_seconds=rate_limit_config.default_window_seconds,
     )
 else:
     logger.warning("rate_limiting_disabled")
@@ -158,7 +150,7 @@ def root():
         "version": settings.api_version,
         "docs": "/docs",
         "v1": "/v1/status",
-        "deprecated_notice": "Root-level endpoints are deprecated. Use /v1/ prefix."
+        "deprecated_notice": "Root-level endpoints are deprecated. Use /v1/ prefix.",
     }
 
 
@@ -171,10 +163,7 @@ def health():
 @app.get("/metrics", tags=["observability"], include_in_schema=False)
 def metrics():
     """Prometheus metrics endpoint."""
-    return Response(
-        content=get_metrics(),
-        media_type=get_metrics_content_type()
-    )
+    return Response(content=get_metrics(), media_type=get_metrics_content_type())
 
 
 if __name__ == "__main__":

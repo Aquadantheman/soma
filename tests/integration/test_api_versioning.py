@@ -1,7 +1,5 @@
 """Integration tests for API versioning."""
 
-import pytest
-
 
 class TestVersionedAPI:
     """Test versioned API endpoints under /v1 prefix."""
@@ -33,8 +31,11 @@ class TestVersionedAPI:
         for endpoint in endpoints:
             response = authenticated_client.get(endpoint)
             # Should not return 500, 405, or 401
-            assert response.status_code in [200, 404, 422], \
-                f"Endpoint {endpoint} returned {response.status_code}"
+            assert response.status_code in [
+                200,
+                404,
+                422,
+            ], f"Endpoint {endpoint} returned {response.status_code}"
 
     def test_legacy_endpoints_deprecated(self, authenticated_client):
         """Legacy endpoints should still work but be deprecated (require auth)."""
@@ -60,7 +61,7 @@ class TestCORSConfiguration:
             headers={
                 "Origin": "http://localhost:3000",
                 "Access-Control-Request-Method": "GET",
-            }
+            },
         )
 
         # Should allow CORS

@@ -1,17 +1,15 @@
 """Unit tests for proven statistical analysis functions."""
 
-import pytest
-import pandas as pd
 import numpy as np
-from datetime import datetime
+import pandas as pd
 
 from soma.statistics.proven import (
     analyze_circadian_rhythm,
-    analyze_weekly_activity,
-    analyze_long_term_trend,
-    detect_anomalies,
     analyze_hrv,
+    analyze_long_term_trend,
     analyze_spo2,
+    analyze_weekly_activity,
+    detect_anomalies,
 )
 
 
@@ -73,8 +71,12 @@ class TestWeeklyActivity:
         result = analyze_weekly_activity(sample_steps_data)
 
         # Our fixture simulates higher weekday activity
-        weekday_means = [p.stats.mean for p in result.daily_patterns if p.day_number < 5]
-        weekend_means = [p.stats.mean for p in result.daily_patterns if p.day_number >= 5]
+        weekday_means = [
+            p.stats.mean for p in result.daily_patterns if p.day_number < 5
+        ]
+        weekend_means = [
+            p.stats.mean for p in result.daily_patterns if p.day_number >= 5
+        ]
 
         avg_weekday = np.mean(weekday_means)
         avg_weekend = np.mean(weekend_means)
@@ -98,11 +100,9 @@ class TestLongTermTrend:
         dates = pd.date_range(start="2021-01-01", end="2023-12-31", freq="D")
         values = 60 + 0.01 * np.arange(len(dates)) + np.random.normal(0, 2, len(dates))
 
-        df = pd.DataFrame({
-            "time": dates,
-            "biomarker_slug": "heart_rate_resting",
-            "value": values
-        })
+        df = pd.DataFrame(
+            {"time": dates, "biomarker_slug": "heart_rate_resting", "value": values}
+        )
 
         result = analyze_long_term_trend(df)
 
@@ -129,13 +129,11 @@ class TestAnomalyDetection:
 
         # Add some clear anomalies
         values[10] = 120  # High outlier
-        values[50] = 40   # Low outlier
+        values[50] = 40  # Low outlier
 
-        df = pd.DataFrame({
-            "time": dates,
-            "biomarker_slug": "heart_rate",
-            "value": values
-        })
+        df = pd.DataFrame(
+            {"time": dates, "biomarker_slug": "heart_rate", "value": values}
+        )
 
         result = detect_anomalies(df)
 
@@ -148,7 +146,11 @@ class TestAnomalyDetection:
         # Aggregate to daily for anomaly detection
         df = sample_hr_data.copy()
         df["date"] = pd.to_datetime(df["time"]).dt.date
-        daily = df.groupby("date").agg({"value": "mean", "biomarker_slug": "first"}).reset_index()
+        daily = (
+            df.groupby("date")
+            .agg({"value": "mean", "biomarker_slug": "first"})
+            .reset_index()
+        )
         daily["time"] = pd.to_datetime(daily["date"])
 
         result = detect_anomalies(daily)
@@ -182,11 +184,13 @@ class TestHRVAnalysis:
         dates = pd.date_range(start="2023-01-01", periods=100, freq="D")
 
         # HRV values that look like microseconds (should be ~50ms but stored as 50000)
-        df = pd.DataFrame({
-            "time": dates,
-            "biomarker_slug": "hrv_sdnn",
-            "value": np.random.normal(50000, 5000, 100)
-        })
+        df = pd.DataFrame(
+            {
+                "time": dates,
+                "biomarker_slug": "hrv_sdnn",
+                "value": np.random.normal(50000, 5000, 100),
+            }
+        )
 
         result = analyze_hrv(df)
 
@@ -209,11 +213,13 @@ class TestSpO2Analysis:
         dates = pd.date_range(start="2023-01-01", periods=1000, freq="H")
 
         # Normal SpO2 values (96-99%)
-        df = pd.DataFrame({
-            "time": dates,
-            "biomarker_slug": "spo2",
-            "value": np.random.normal(97, 1, len(dates)).clip(90, 100)
-        })
+        df = pd.DataFrame(
+            {
+                "time": dates,
+                "biomarker_slug": "spo2",
+                "value": np.random.normal(97, 1, len(dates)).clip(90, 100),
+            }
+        )
 
         result = analyze_spo2(df)
 
@@ -228,17 +234,15 @@ class TestSpO2Analysis:
         dates = pd.date_range(start="2023-01-01", periods=100, freq="H")
 
         # Mix of normal and low values
-        values = np.concatenate([
-            np.random.normal(97, 0.5, 80),  # Normal
-            np.random.normal(93, 1, 20)     # Low
-        ])
+        values = np.concatenate(
+            [
+                np.random.normal(97, 0.5, 80),  # Normal
+                np.random.normal(93, 1, 20),  # Low
+            ]
+        )
         np.random.shuffle(values)
 
-        df = pd.DataFrame({
-            "time": dates,
-            "biomarker_slug": "spo2",
-            "value": values
-        })
+        df = pd.DataFrame({"time": dates, "biomarker_slug": "spo2", "value": values})
 
         result = analyze_spo2(df)
 

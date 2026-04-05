@@ -40,15 +40,19 @@ def _measurement_to_schema(m) -> WeightMeasurementSchema:
         bmi=m.bmi,
         body_fat_pct=m.body_fat_pct,
         lean_mass_kg=m.lean_mass_kg,
-        fat_mass_kg=m.fat_mass_kg
+        fat_mass_kg=m.fat_mass_kg,
     )
 
 
 @router.get("/body-composition", response_model=BodyCompositionReportSchema)
 def get_body_composition_analysis(
-    height_m: Optional[float] = Query(None, description="Your height in meters for BMI calculation"),
+    height_m: Optional[float] = Query(
+        None, description="Your height in meters for BMI calculation"
+    ),
     age: Optional[int] = Query(None, description="Your age for body fat percentile"),
-    sex: Optional[str] = Query(None, description="Your sex (male/female) for body fat percentile"),
+    sex: Optional[str] = Query(
+        None, description="Your sex (male/female) for body fat percentile"
+    ),
     days: int = Query(730, description="Days of history to analyze"),
     db: Session = Depends(get_db),
     auth: AuthContext = Depends(require_auth),
@@ -69,17 +73,15 @@ def get_body_composition_analysis(
     df = load_signals(
         db,
         biomarker_slugs=["body_mass", "body_fat_percentage", "lean_body_mass"],
-        days=days
+        days=days,
     )
 
     if df is None or len(df) == 0:
-        raise HTTPException(
-            status_code=404,
-            detail="No body composition data found"
-        )
+        raise HTTPException(status_code=404, detail="No body composition data found")
 
     # Also load fitness metrics for correlation analysis
     import pandas as pd
+
     vo2_df = load_signals(db, biomarker_slugs=["vo2_max"], days=days)
     rhr_df = load_signals(db, biomarker_slugs=["heart_rate_resting"], days=days)
 
@@ -90,14 +92,13 @@ def get_body_composition_analysis(
         all_data = pd.concat([all_data, rhr_df], ignore_index=True)
 
     report = generate_body_composition_report(
-        all_data,
-        height_m=height_m,
-        age=age,
-        sex=sex
+        all_data, height_m=height_m, age=age, sex=sex
     )
 
     if report is None:
-        raise HTTPException(status_code=404, detail="Unable to generate body composition report")
+        raise HTTPException(
+            status_code=404, detail="Unable to generate body composition report"
+        )
 
     # Convert to schema
     bmi_schema = None
@@ -106,7 +107,7 @@ def get_body_composition_analysis(
             bmi=report.bmi.bmi,
             category=report.bmi.category,
             health_risk=report.bmi.health_risk,
-            reference=report.bmi.reference
+            reference=report.bmi.reference,
         )
 
     bf_percentile_schema = None
@@ -118,7 +119,7 @@ def get_body_composition_analysis(
             comparison_group=report.body_fat_percentile.comparison_group,
             is_healthy=report.body_fat_percentile.is_healthy,
             healthy_range=list(report.body_fat_percentile.healthy_range),
-            reference=report.body_fat_percentile.reference
+            reference=report.body_fat_percentile.reference,
         )
 
     trend_schema = None
@@ -137,7 +138,7 @@ def get_body_composition_analysis(
             p_value=report.weight_trend.p_value,
             is_significant=report.weight_trend.is_significant,
             direction=report.weight_trend.direction,
-            interpretation=report.weight_trend.interpretation
+            interpretation=report.weight_trend.interpretation,
         )
 
     change_schema = None
@@ -150,7 +151,7 @@ def get_body_composition_analysis(
             lean_mass_change_kg=report.composition_change.lean_mass_change_kg,
             fat_mass_change_kg=report.composition_change.fat_mass_change_kg,
             composition_quality=report.composition_change.composition_quality,
-            interpretation=report.composition_change.interpretation
+            interpretation=report.composition_change.interpretation,
         )
 
     vo2_corr_schema = None
@@ -162,7 +163,7 @@ def get_body_composition_analysis(
             n=report.vo2max_correlation.n,
             is_significant=report.vo2max_correlation.is_significant,
             direction=report.vo2max_correlation.direction,
-            interpretation=report.vo2max_correlation.interpretation
+            interpretation=report.vo2max_correlation.interpretation,
         )
 
     rhr_corr_schema = None
@@ -174,7 +175,7 @@ def get_body_composition_analysis(
             n=report.rhr_correlation.n,
             is_significant=report.rhr_correlation.is_significant,
             direction=report.rhr_correlation.direction,
-            interpretation=report.rhr_correlation.interpretation
+            interpretation=report.rhr_correlation.interpretation,
         )
 
     return BodyCompositionReportSchema(
@@ -187,7 +188,7 @@ def get_body_composition_analysis(
         vo2max_correlation=vo2_corr_schema,
         rhr_correlation=rhr_corr_schema,
         insights=report.insights,
-        recommendations=report.recommendations
+        recommendations=report.recommendations,
     )
 
 
@@ -207,12 +208,13 @@ def get_body_composition_summary(
     df = load_signals(
         db,
         biomarker_slugs=["body_mass", "body_fat_percentage", "lean_body_mass"],
-        days=730
+        days=730,
     )
 
     if df is None:
         import pandas as pd
-        df = pd.DataFrame(columns=['time', 'biomarker_slug', 'value'])
+
+        df = pd.DataFrame(columns=["time", "biomarker_slug", "value"])
 
     summary = get_body_composition_summary(df, height_m=height_m, age=age, sex=sex)
 
@@ -226,7 +228,7 @@ def get_body_composition_summary(
         latest_body_fat_pct=summary.latest_body_fat_pct,
         body_fat_category=summary.body_fat_category,
         weight_trend_direction=summary.weight_trend_direction,
-        overall_assessment=summary.overall_assessment
+        overall_assessment=summary.overall_assessment,
     )
 
 
@@ -249,8 +251,9 @@ def get_bmi_analysis(
         raise HTTPException(status_code=404, detail="No weight data found")
 
     import pandas as pd
-    df['time'] = pd.to_datetime(df['time'])
-    latest_weight = df.sort_values('time').iloc[-1]['value']
+
+    df["time"] = pd.to_datetime(df["time"])
+    latest_weight = df.sort_values("time").iloc[-1]["value"]
 
     bmi_result = compute_bmi(latest_weight, height_m)
 
@@ -258,7 +261,7 @@ def get_bmi_analysis(
         bmi=bmi_result.bmi,
         category=bmi_result.category,
         health_risk=bmi_result.health_risk,
-        reference=bmi_result.reference
+        reference=bmi_result.reference,
     )
 
 
@@ -282,10 +285,11 @@ def get_body_fat_percentile(
         raise HTTPException(status_code=404, detail="No body fat data found")
 
     import pandas as pd
-    df['time'] = pd.to_datetime(df['time'])
-    latest_bf = df.sort_values('time').iloc[-1]['value']
 
-    if sex.lower() not in ['male', 'female']:
+    df["time"] = pd.to_datetime(df["time"])
+    latest_bf = df.sort_values("time").iloc[-1]["value"]
+
+    if sex.lower() not in ["male", "female"]:
         raise HTTPException(status_code=400, detail="Sex must be 'male' or 'female'")
 
     result = compute_body_fat_percentile(latest_bf, age, sex)
@@ -297,7 +301,7 @@ def get_body_fat_percentile(
         comparison_group=result.comparison_group,
         is_healthy=result.is_healthy,
         healthy_range=list(result.healthy_range),
-        reference=result.reference
+        reference=result.reference,
     )
 
 
@@ -324,7 +328,7 @@ def get_weight_trend(
     if trend is None:
         raise HTTPException(
             status_code=404,
-            detail="Insufficient data for trend analysis (need at least 5 measurements)"
+            detail="Insufficient data for trend analysis (need at least 5 measurements)",
         )
 
     return WeightTrendSchema(
@@ -341,5 +345,5 @@ def get_weight_trend(
         p_value=trend.p_value,
         is_significant=trend.is_significant,
         direction=trend.direction,
-        interpretation=trend.interpretation
+        interpretation=trend.interpretation,
     )
