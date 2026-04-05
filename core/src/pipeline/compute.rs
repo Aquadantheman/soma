@@ -246,8 +246,7 @@ fn adjust_circular_times(times: &[f64]) -> Vec<f64> {
 /// # Range
 /// - < 60 min: Minimal social jet lag
 /// - 60-120 min: Moderate social jet lag
-/// - > 120 min: Severe social jet lag (associated with obesity, depression,
-///              metabolic syndrome)
+/// - > 120 min: Severe social jet lag (associated with obesity, depression, metabolic syndrome)
 ///
 /// # References
 /// - Wittmann et al. (2006). Social jetlag: misalignment of biological and social

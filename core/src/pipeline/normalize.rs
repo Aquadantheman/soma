@@ -240,10 +240,10 @@ pub fn normalize_value(biomarker_slug: &str, value: f64, source_slug: &str) -> N
         "sleep_rem" | "sleep_deep" | "sleep_core" | "sleep_in_bed" | "sleep_duration" => {
             // If value is in typical hour range (0.5-12 hours), convert to minutes
             // Tightened from <15 to 0.5-12 to avoid false positives for short naps in minutes
-            if value >= 0.5 && value <= 12.0 {
+            if (0.5..=12.0).contains(&value) {
                 let as_minutes = value * conversions::HOURS_TO_MINUTES;
                 // Only convert if result is reasonable (30-720 minutes = 0.5-12 hours)
-                if as_minutes >= 30.0 && as_minutes <= 720.0 {
+                if (30.0..=720.0).contains(&as_minutes) {
                     return NormalizationResult::converted(
                         as_minutes,
                         "Converted sleep duration from hours to minutes",
@@ -338,7 +338,7 @@ pub fn normalize_value(biomarker_slug: &str, value: f64, source_slug: &str) -> N
             if value > 0.0 && value < 10.0 {
                 let as_minutes = value * conversions::HOURS_TO_MINUTES;
                 // Sanity check: converted value should be reasonable (10-600 min)
-                if as_minutes >= 10.0 && as_minutes <= 600.0 {
+                if (10.0..=600.0).contains(&as_minutes) {
                     return NormalizationResult::converted(
                         as_minutes,
                         "Converted exercise time from hours to minutes",

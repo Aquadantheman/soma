@@ -176,6 +176,7 @@ impl TimescaleStore {
     }
 
     /// Complete an ingest log entry
+    #[allow(clippy::too_many_arguments)]
     pub async fn complete_ingest_log(
         &self,
         log_id: i32,

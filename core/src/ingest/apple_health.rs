@@ -245,6 +245,12 @@ fn menstrual_flow_value(value: &str) -> Option<f64> {
 
 pub struct AppleHealthIngester;
 
+impl Default for AppleHealthIngester {
+    fn default() -> Self {
+        Self
+    }
+}
+
 impl AppleHealthIngester {
     pub fn new() -> Self {
         Self
@@ -277,7 +283,7 @@ impl AppleHealthIngester {
                                 let attrs = self.attrs_to_map(&e);
                                 if attrs
                                     .get("value")
-                                    .map_or(false, |v| v == "HKCategoryValueSleepAnalysisInBed")
+                                    .is_some_and(|v| v == "HKCategoryValueSleepAnalysisInBed")
                                 {
                                     for timing_signal in self.extract_sleep_timing_signals(&attrs) {
                                         batch.push(timing_signal);

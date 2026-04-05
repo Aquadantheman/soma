@@ -152,13 +152,6 @@ pub fn attach_hash(signal: &mut Signal, raw_bytes: &[u8]) {
 // BATCH OPERATIONS
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Hash multiple signals in parallel (for batch ingestion)
-#[cfg(feature = "parallel")]
-pub fn hash_signals_parallel(signals: &[Signal]) -> Vec<HashOutput> {
-    use rayon::prelude::*;
-    signals.par_iter().map(hash_signal_content).collect()
-}
-
 /// Hash multiple signals sequentially
 pub fn hash_signals(signals: &[Signal]) -> Vec<HashOutput> {
     signals.iter().map(hash_signal_content).collect()
