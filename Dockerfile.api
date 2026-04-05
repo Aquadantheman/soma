@@ -18,12 +18,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Copy source code and install Python dependencies
-COPY pyproject.toml ./
-COPY api/ ./api/
-COPY science/ ./science/
+# Install Python dependencies from requirements.txt
+COPY api/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir .
+    pip install --no-cache-dir -r requirements.txt
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Stage 2: Production
