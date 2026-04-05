@@ -14,73 +14,205 @@ fn apple_type_map() -> HashMap<&'static str, (&'static str, f64)> {
     let mut m = HashMap::new();
 
     // ===== CARDIOVASCULAR =====
-    m.insert("HKQuantityTypeIdentifierHeartRate",               ("heart_rate",         1.0));
-    m.insert("HKQuantityTypeIdentifierRestingHeartRate",        ("heart_rate_resting", 1.0));
-    m.insert("HKQuantityTypeIdentifierHeartRateVariabilitySDNN",("hrv_sdnn",           0.001)); // Apple exports µs, convert to ms
-    m.insert("HKQuantityTypeIdentifierWalkingHeartRateAverage", ("walking_hr_avg",     1.0));
-    m.insert("HKQuantityTypeIdentifierHeartRateRecoveryOneMinute", ("hr_recovery_1min", 1.0));
-    m.insert("HKQuantityTypeIdentifierBloodPressureSystolic",   ("bp_systolic",        1.0));
-    m.insert("HKQuantityTypeIdentifierBloodPressureDiastolic",  ("bp_diastolic",       1.0));
+    m.insert("HKQuantityTypeIdentifierHeartRate", ("heart_rate", 1.0));
+    m.insert(
+        "HKQuantityTypeIdentifierRestingHeartRate",
+        ("heart_rate_resting", 1.0),
+    );
+    m.insert(
+        "HKQuantityTypeIdentifierHeartRateVariabilitySDNN",
+        ("hrv_sdnn", 0.001),
+    ); // Apple exports µs, convert to ms
+    m.insert(
+        "HKQuantityTypeIdentifierWalkingHeartRateAverage",
+        ("walking_hr_avg", 1.0),
+    );
+    m.insert(
+        "HKQuantityTypeIdentifierHeartRateRecoveryOneMinute",
+        ("hr_recovery_1min", 1.0),
+    );
+    m.insert(
+        "HKQuantityTypeIdentifierBloodPressureSystolic",
+        ("bp_systolic", 1.0),
+    );
+    m.insert(
+        "HKQuantityTypeIdentifierBloodPressureDiastolic",
+        ("bp_diastolic", 1.0),
+    );
 
     // ===== RESPIRATORY =====
-    m.insert("HKQuantityTypeIdentifierOxygenSaturation",        ("spo2",               100.0)); // ratio -> %
-    m.insert("HKQuantityTypeIdentifierRespiratoryRate",         ("respiratory_rate",   1.0));
-    m.insert("HKQuantityTypeIdentifierVO2Max",                  ("vo2_max",            1.0));
+    m.insert("HKQuantityTypeIdentifierOxygenSaturation", ("spo2", 100.0)); // ratio -> %
+    m.insert(
+        "HKQuantityTypeIdentifierRespiratoryRate",
+        ("respiratory_rate", 1.0),
+    );
+    m.insert("HKQuantityTypeIdentifierVO2Max", ("vo2_max", 1.0));
 
     // ===== ACTIVITY =====
-    m.insert("HKQuantityTypeIdentifierStepCount",               ("steps",              1.0));
-    m.insert("HKQuantityTypeIdentifierDistanceWalkingRunning",  ("distance_walking_running", 1000.0)); // km -> m
-    m.insert("HKQuantityTypeIdentifierDistanceCycling",         ("distance_cycling",   1000.0)); // km -> m
-    m.insert("HKQuantityTypeIdentifierDistanceSwimming",        ("distance_swimming",  1.0)); // m
-    m.insert("HKQuantityTypeIdentifierActiveEnergyBurned",      ("active_energy",      1.0));
-    m.insert("HKQuantityTypeIdentifierBasalEnergyBurned",       ("basal_energy",       1.0));
-    m.insert("HKQuantityTypeIdentifierAppleExerciseTime",       ("exercise_time",      1.0)); // min
-    m.insert("HKQuantityTypeIdentifierAppleStandTime",          ("stand_time",         1.0)); // min
-    m.insert("HKQuantityTypeIdentifierFlightsClimbed",          ("flights_climbed",    1.0));
-    m.insert("HKQuantityTypeIdentifierPhysicalEffort",          ("physical_effort",    1.0));
-    m.insert("HKQuantityTypeIdentifierSwimmingStrokeCount",     ("swimming_strokes",   1.0));
+    m.insert("HKQuantityTypeIdentifierStepCount", ("steps", 1.0));
+    m.insert(
+        "HKQuantityTypeIdentifierDistanceWalkingRunning",
+        ("distance_walking_running", 1000.0),
+    ); // km -> m
+    m.insert(
+        "HKQuantityTypeIdentifierDistanceCycling",
+        ("distance_cycling", 1000.0),
+    ); // km -> m
+    m.insert(
+        "HKQuantityTypeIdentifierDistanceSwimming",
+        ("distance_swimming", 1.0),
+    ); // m
+    m.insert(
+        "HKQuantityTypeIdentifierActiveEnergyBurned",
+        ("active_energy", 1.0),
+    );
+    m.insert(
+        "HKQuantityTypeIdentifierBasalEnergyBurned",
+        ("basal_energy", 1.0),
+    );
+    m.insert(
+        "HKQuantityTypeIdentifierAppleExerciseTime",
+        ("exercise_time", 1.0),
+    ); // min
+    m.insert(
+        "HKQuantityTypeIdentifierAppleStandTime",
+        ("stand_time", 1.0),
+    ); // min
+    m.insert(
+        "HKQuantityTypeIdentifierFlightsClimbed",
+        ("flights_climbed", 1.0),
+    );
+    m.insert(
+        "HKQuantityTypeIdentifierPhysicalEffort",
+        ("physical_effort", 1.0),
+    );
+    m.insert(
+        "HKQuantityTypeIdentifierSwimmingStrokeCount",
+        ("swimming_strokes", 1.0),
+    );
 
     // ===== MOBILITY & GAIT =====
-    m.insert("HKQuantityTypeIdentifierWalkingSpeed",            ("walking_speed",      1.0)); // m/s
-    m.insert("HKQuantityTypeIdentifierWalkingStepLength",       ("walking_step_length",0.01)); // cm -> m
-    m.insert("HKQuantityTypeIdentifierWalkingAsymmetryPercentage", ("walking_asymmetry", 100.0)); // ratio -> %
-    m.insert("HKQuantityTypeIdentifierWalkingDoubleSupportPercentage", ("walking_double_support", 100.0));
-    m.insert("HKQuantityTypeIdentifierAppleWalkingSteadiness",  ("walking_steadiness", 100.0)); // ratio -> %
-    m.insert("HKQuantityTypeIdentifierStairAscentSpeed",        ("stair_ascent_speed", 1.0)); // m/s
-    m.insert("HKQuantityTypeIdentifierStairDescentSpeed",       ("stair_descent_speed",1.0)); // m/s
+    m.insert(
+        "HKQuantityTypeIdentifierWalkingSpeed",
+        ("walking_speed", 1.0),
+    ); // m/s
+    m.insert(
+        "HKQuantityTypeIdentifierWalkingStepLength",
+        ("walking_step_length", 0.01),
+    ); // cm -> m
+    m.insert(
+        "HKQuantityTypeIdentifierWalkingAsymmetryPercentage",
+        ("walking_asymmetry", 100.0),
+    ); // ratio -> %
+    m.insert(
+        "HKQuantityTypeIdentifierWalkingDoubleSupportPercentage",
+        ("walking_double_support", 100.0),
+    );
+    m.insert(
+        "HKQuantityTypeIdentifierAppleWalkingSteadiness",
+        ("walking_steadiness", 100.0),
+    ); // ratio -> %
+    m.insert(
+        "HKQuantityTypeIdentifierStairAscentSpeed",
+        ("stair_ascent_speed", 1.0),
+    ); // m/s
+    m.insert(
+        "HKQuantityTypeIdentifierStairDescentSpeed",
+        ("stair_descent_speed", 1.0),
+    ); // m/s
 
     // ===== RUNNING BIOMECHANICS =====
-    m.insert("HKQuantityTypeIdentifierRunningSpeed",            ("running_speed",      1.0)); // m/s
-    m.insert("HKQuantityTypeIdentifierRunningPower",            ("running_power",      1.0)); // W
-    m.insert("HKQuantityTypeIdentifierRunningStrideLength",     ("stride_length",      1.0)); // m
-    m.insert("HKQuantityTypeIdentifierRunningVerticalOscillation", ("vertical_oscillation", 100.0)); // m -> cm
-    m.insert("HKQuantityTypeIdentifierRunningGroundContactTime",("ground_contact_time",1000.0)); // s -> ms
+    m.insert(
+        "HKQuantityTypeIdentifierRunningSpeed",
+        ("running_speed", 1.0),
+    ); // m/s
+    m.insert(
+        "HKQuantityTypeIdentifierRunningPower",
+        ("running_power", 1.0),
+    ); // W
+    m.insert(
+        "HKQuantityTypeIdentifierRunningStrideLength",
+        ("stride_length", 1.0),
+    ); // m
+    m.insert(
+        "HKQuantityTypeIdentifierRunningVerticalOscillation",
+        ("vertical_oscillation", 100.0),
+    ); // m -> cm
+    m.insert(
+        "HKQuantityTypeIdentifierRunningGroundContactTime",
+        ("ground_contact_time", 1000.0),
+    ); // s -> ms
 
     // ===== BODY COMPOSITION =====
-    m.insert("HKQuantityTypeIdentifierBodyMass",                ("body_mass",          0.453592)); // lb -> kg
-    m.insert("HKQuantityTypeIdentifierBodyFatPercentage",       ("body_fat_percentage",100.0)); // ratio -> %
-    m.insert("HKQuantityTypeIdentifierLeanBodyMass",            ("lean_body_mass",     0.453592)); // lb -> kg
-    m.insert("HKQuantityTypeIdentifierBodyMassIndex",           ("body_mass_index",    1.0));
-    m.insert("HKQuantityTypeIdentifierHeight",                  ("height",             0.01)); // cm -> m
-    m.insert("HKQuantityTypeIdentifierWaistCircumference",      ("waist_circumference",0.01)); // cm -> m
+    m.insert("HKQuantityTypeIdentifierBodyMass", ("body_mass", 0.453592)); // lb -> kg
+    m.insert(
+        "HKQuantityTypeIdentifierBodyFatPercentage",
+        ("body_fat_percentage", 100.0),
+    ); // ratio -> %
+    m.insert(
+        "HKQuantityTypeIdentifierLeanBodyMass",
+        ("lean_body_mass", 0.453592),
+    ); // lb -> kg
+    m.insert(
+        "HKQuantityTypeIdentifierBodyMassIndex",
+        ("body_mass_index", 1.0),
+    );
+    m.insert("HKQuantityTypeIdentifierHeight", ("height", 0.01)); // cm -> m
+    m.insert(
+        "HKQuantityTypeIdentifierWaistCircumference",
+        ("waist_circumference", 0.01),
+    ); // cm -> m
 
     // ===== ENVIRONMENT =====
-    m.insert("HKQuantityTypeIdentifierTimeInDaylight",          ("daylight_exposure",  1.0)); // min
-    m.insert("HKQuantityTypeIdentifierHeadphoneAudioExposure",  ("headphone_exposure", 1.0)); // dB
-    m.insert("HKQuantityTypeIdentifierEnvironmentalAudioExposure", ("noise_exposure_avg", 1.0)); // dB
+    m.insert(
+        "HKQuantityTypeIdentifierTimeInDaylight",
+        ("daylight_exposure", 1.0),
+    ); // min
+    m.insert(
+        "HKQuantityTypeIdentifierHeadphoneAudioExposure",
+        ("headphone_exposure", 1.0),
+    ); // dB
+    m.insert(
+        "HKQuantityTypeIdentifierEnvironmentalAudioExposure",
+        ("noise_exposure_avg", 1.0),
+    ); // dB
 
     // ===== ENDOCRINE =====
-    m.insert("HKQuantityTypeIdentifierBodyTemperature",         ("core_temp",          1.0));
-    m.insert("HKQuantityTypeIdentifierBasalBodyTemperature",    ("basal_body_temp",    1.0)); // °C
-    m.insert("HKQuantityTypeIdentifierBloodGlucose",            ("glucose",            1.0));
-    m.insert("HKQuantityTypeIdentifierAppleSleepingWristTemperature", ("skin_temp_delta", 1.0)); // °C deviation
+    m.insert(
+        "HKQuantityTypeIdentifierBodyTemperature",
+        ("core_temp", 1.0),
+    );
+    m.insert(
+        "HKQuantityTypeIdentifierBasalBodyTemperature",
+        ("basal_body_temp", 1.0),
+    ); // °C
+    m.insert("HKQuantityTypeIdentifierBloodGlucose", ("glucose", 1.0));
+    m.insert(
+        "HKQuantityTypeIdentifierAppleSleepingWristTemperature",
+        ("skin_temp_delta", 1.0),
+    ); // °C deviation
 
     // ===== NUTRITION =====
-    m.insert("HKQuantityTypeIdentifierDietaryEnergyConsumed",   ("calories_consumed",  1.0)); // kcal
-    m.insert("HKQuantityTypeIdentifierDietaryProtein",          ("protein_intake",     1.0)); // g
-    m.insert("HKQuantityTypeIdentifierDietaryCarbohydrates",    ("carb_intake",        1.0)); // g
-    m.insert("HKQuantityTypeIdentifierDietaryFatTotal",         ("fat_intake",         1.0)); // g
-    m.insert("HKQuantityTypeIdentifierDietaryWater",            ("water_intake",       1.0)); // mL
+    m.insert(
+        "HKQuantityTypeIdentifierDietaryEnergyConsumed",
+        ("calories_consumed", 1.0),
+    ); // kcal
+    m.insert(
+        "HKQuantityTypeIdentifierDietaryProtein",
+        ("protein_intake", 1.0),
+    ); // g
+    m.insert(
+        "HKQuantityTypeIdentifierDietaryCarbohydrates",
+        ("carb_intake", 1.0),
+    ); // g
+    m.insert(
+        "HKQuantityTypeIdentifierDietaryFatTotal",
+        ("fat_intake", 1.0),
+    ); // g
+    m.insert(
+        "HKQuantityTypeIdentifierDietaryWater",
+        ("water_intake", 1.0),
+    ); // mL
 
     m
 }
@@ -88,10 +220,10 @@ fn apple_type_map() -> HashMap<&'static str, (&'static str, f64)> {
 /// Maps Apple Health sleep analysis values
 fn sleep_stage_map() -> HashMap<&'static str, &'static str> {
     let mut m = HashMap::new();
-    m.insert("HKCategoryValueSleepAnalysisAsleepREM",   "sleep_rem");
-    m.insert("HKCategoryValueSleepAnalysisAsleepDeep",  "sleep_deep");
-    m.insert("HKCategoryValueSleepAnalysisAsleepCore",  "sleep_core");
-    m.insert("HKCategoryValueSleepAnalysisInBed",       "sleep_in_bed");
+    m.insert("HKCategoryValueSleepAnalysisAsleepREM", "sleep_rem");
+    m.insert("HKCategoryValueSleepAnalysisAsleepDeep", "sleep_deep");
+    m.insert("HKCategoryValueSleepAnalysisAsleepCore", "sleep_core");
+    m.insert("HKCategoryValueSleepAnalysisInBed", "sleep_in_bed");
     m
 }
 
@@ -143,7 +275,10 @@ impl AppleHealthIngester {
                                 // For sleep_in_bed records, also extract timing signals
                                 // These are needed for circadian metrics (SRI, social jet lag)
                                 let attrs = self.attrs_to_map(&e);
-                                if attrs.get("value").map_or(false, |v| v == "HKCategoryValueSleepAnalysisInBed") {
+                                if attrs
+                                    .get("value")
+                                    .map_or(false, |v| v == "HKCategoryValueSleepAnalysisInBed")
+                                {
                                     for timing_signal in self.extract_sleep_timing_signals(&attrs) {
                                         batch.push(timing_signal);
                                     }
@@ -199,7 +334,9 @@ impl AppleHealthIngester {
             Some((end - time).num_seconds() as i32)
         });
 
-        let raw_id = attrs.get("uuid").cloned()
+        let raw_id = attrs
+            .get("uuid")
+            .cloned()
             .unwrap_or_else(|| format!("{}_{}", start_date, soma_slug));
 
         let raw_bytes = format!("{}{}{}", record_type, start_date, value_str);
@@ -212,7 +349,10 @@ impl AppleHealthIngester {
             signal = signal.with_window(ws);
         }
 
-        debug!("Parsed Apple Health record: {} = {}", soma_slug, converted_value);
+        debug!(
+            "Parsed Apple Health record: {} = {}",
+            soma_slug, converted_value
+        );
         Some(signal)
     }
 
@@ -305,10 +445,7 @@ impl AppleHealthIngester {
 
     /// Extract sleep timing signals (onset, offset) from a sleep_in_bed record
     /// These are essential for computing sleep_midpoint, SRI, and social_jetlag
-    fn extract_sleep_timing_signals(
-        &self,
-        attrs: &HashMap<String, String>,
-    ) -> Vec<Signal> {
+    fn extract_sleep_timing_signals(&self, attrs: &HashMap<String, String>) -> Vec<Signal> {
         let mut signals = Vec::new();
 
         let start_date = match attrs.get("startDate") {
@@ -337,14 +474,14 @@ impl AppleHealthIngester {
         let onset_raw = format!("sleep_onset_{}", start_date);
         signals.push(
             Signal::new(start, "sleep_onset_time", onset_min, "apple_health")
-                .with_hash(onset_raw.as_bytes())
+                .with_hash(onset_raw.as_bytes()),
         );
 
         // Create sleep_offset_time signal
         let offset_raw = format!("sleep_offset_{}", end_date);
         signals.push(
             Signal::new(start, "sleep_offset_time", offset_min, "apple_health")
-                .with_hash(offset_raw.as_bytes())
+                .with_hash(offset_raw.as_bytes()),
         );
 
         // Also compute and store sleep_midpoint directly
@@ -352,7 +489,7 @@ impl AppleHealthIngester {
         let midpoint_raw = format!("sleep_midpoint_{}_{}", start_date, end_date);
         signals.push(
             Signal::new(start, "sleep_midpoint", midpoint, "apple_health")
-                .with_hash(midpoint_raw.as_bytes())
+                .with_hash(midpoint_raw.as_bytes()),
         );
 
         debug!(

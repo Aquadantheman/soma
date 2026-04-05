@@ -199,10 +199,7 @@ fn adjust_circular_times(times: &[f64]) -> Vec<f64> {
     }
 
     // Filter out NaN values and find the reference point (median time)
-    let mut sorted: Vec<f64> = times.iter()
-        .copied()
-        .filter(|v| v.is_finite())
-        .collect();
+    let mut sorted: Vec<f64> = times.iter().copied().filter(|v| v.is_finite()).collect();
 
     if sorted.is_empty() {
         return vec![];

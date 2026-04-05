@@ -17,7 +17,11 @@ use store::timescale::TimescaleStore;
 #[command(about = "Soma biosignal ingestion and processing pipeline")]
 struct Cli {
     /// Database URL (or set SOMA_DATABASE_URL env var)
-    #[arg(long, env = "SOMA_DATABASE_URL", default_value = "postgres://postgres:soma_dev@127.0.0.1:5432/soma")]
+    #[arg(
+        long,
+        env = "SOMA_DATABASE_URL",
+        default_value = "postgres://postgres:soma_dev@127.0.0.1:5432/soma"
+    )]
     database_url: String,
 
     #[command(subcommand)]
@@ -154,10 +158,13 @@ async fn main() -> Result<()> {
                                 _ => "?",
                             };
 
-                            let duration = entry.completed_at.map(|c| {
-                                let dur = c - entry.started_at;
-                                format!("{}s", dur.num_seconds())
-                            }).unwrap_or_else(|| "running".to_string());
+                            let duration = entry
+                                .completed_at
+                                .map(|c| {
+                                    let dur = c - entry.started_at;
+                                    format!("{}s", dur.num_seconds())
+                                })
+                                .unwrap_or_else(|| "running".to_string());
 
                             println!(
                                 "\n  {} [{}] {} ({})",
@@ -170,7 +177,7 @@ async fn main() -> Result<()> {
                             if let Some(path) = &entry.file_path {
                                 // Truncate long paths
                                 let display_path = if path.len() > 50 {
-                                    format!("...{}", &path[path.len()-47..])
+                                    format!("...{}", &path[path.len() - 47..])
                                 } else {
                                     path.clone()
                                 };

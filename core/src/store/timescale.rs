@@ -34,7 +34,10 @@ impl TimescaleStore {
             match self.write_batch_chunk(chunk).await {
                 Ok(written) => total_written += written,
                 Err(e) => {
-                    tracing::warn!("Batch insert failed, falling back to individual inserts: {}", e);
+                    tracing::warn!(
+                        "Batch insert failed, falling back to individual inserts: {}",
+                        e
+                    );
                     // Fallback to individual inserts for this chunk
                     for signal in chunk {
                         match self.write_signal(signal).await {
@@ -72,7 +75,7 @@ impl TimescaleStore {
                 time, biomarker_slug, value, value_text,
                 source_slug, window_seconds, quality,
                 blake3_hash, raw_source_id
-            ) VALUES "
+            ) VALUES ",
         );
 
         let mut param_idx = 1u32;
@@ -82,8 +85,15 @@ impl TimescaleStore {
             }
             query.push_str(&format!(
                 "(${}, ${}, ${}, ${}, ${}, ${}, ${}, ${}, ${})",
-                param_idx, param_idx + 1, param_idx + 2, param_idx + 3,
-                param_idx + 4, param_idx + 5, param_idx + 6, param_idx + 7, param_idx + 8
+                param_idx,
+                param_idx + 1,
+                param_idx + 2,
+                param_idx + 3,
+                param_idx + 4,
+                param_idx + 5,
+                param_idx + 6,
+                param_idx + 7,
+                param_idx + 8
             ));
             param_idx += 9;
         }
@@ -91,7 +101,7 @@ impl TimescaleStore {
         query.push_str(
             " ON CONFLICT (time, biomarker_slug, source_slug)
               WHERE raw_source_id IS NOT NULL
-              DO NOTHING"
+              DO NOTHING",
         );
 
         // Build and execute the query with all parameters
@@ -145,7 +155,11 @@ impl TimescaleStore {
     }
 
     /// Log an ingest run start, return the log ID
-    pub async fn start_ingest_log(&self, source_slug: &str, file_path: Option<&str>) -> Result<i32> {
+    pub async fn start_ingest_log(
+        &self,
+        source_slug: &str,
+        file_path: Option<&str>,
+    ) -> Result<i32> {
         let row = sqlx::query!(
             r#"
             INSERT INTO ingest_log (source_slug, file_path)

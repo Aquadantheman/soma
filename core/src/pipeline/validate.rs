@@ -179,17 +179,13 @@ pub fn get_range(biomarker_slug: &str) -> Option<PhysiologicalRange> {
         "basal_energy" => PhysiologicalRange::new(0.0, 0.0, 200.0, 2000.0),
 
         // Activity score (device-specific, typically 0-100)
-        "activity_score" | "physical_effort" => {
-            PhysiologicalRange::new(0.0, 0.0, 100.0, 100.0)
-        }
+        "activity_score" | "physical_effort" => PhysiologicalRange::new(0.0, 0.0, 100.0, 100.0),
 
         // Stand hours: 0-24
         "stand_hours" => PhysiologicalRange::new(0.0, 0.0, 18.0, 24.0),
 
         // Stand/exercise time in minutes
-        "stand_time" | "exercise_time" => {
-            PhysiologicalRange::new(0.0, 0.0, 480.0, 1440.0)
-        }
+        "stand_time" | "exercise_time" => PhysiologicalRange::new(0.0, 0.0, 480.0, 1440.0),
 
         // Flights climbed
         "flights_climbed" => PhysiologicalRange::new(0.0, 0.0, 100.0, 500.0),
@@ -338,9 +334,7 @@ pub fn get_range(biomarker_slug: &str) -> Option<PhysiologicalRange> {
         // ─────────────────────────────────────────────────────────────────
         // SUBJECTIVE (1-10 scales)
         // ─────────────────────────────────────────────────────────────────
-        "mood" | "energy" | "anxiety" | "focus" => {
-            PhysiologicalRange::new(1.0, 1.0, 10.0, 10.0)
-        }
+        "mood" | "energy" | "anxiety" | "focus" => PhysiologicalRange::new(1.0, 1.0, 10.0, 10.0),
 
         // ─────────────────────────────────────────────────────────────────
         // CARDIOVASCULAR RECOVERY (Cole et al. NEJM 1999)
@@ -373,9 +367,7 @@ pub fn get_range(biomarker_slug: &str) -> Option<PhysiologicalRange> {
         "gait_speed" => PhysiologicalRange::new(0.0, 0.5, 2.0, 4.0),
 
         // Stair climbing speeds (m/s vertical)
-        "stair_ascent_speed" | "stair_descent_speed" => {
-            PhysiologicalRange::new(0.0, 0.2, 1.0, 2.0)
-        }
+        "stair_ascent_speed" | "stair_descent_speed" => PhysiologicalRange::new(0.0, 0.2, 1.0, 2.0),
 
         // ─────────────────────────────────────────────────────────────────
         // RUNNING BIOMECHANICS
@@ -499,19 +491,16 @@ pub fn validate_signal(signal: &Signal) -> ValidationResult {
             if signal.value_text.is_some() {
                 return ValidationResult::valid();
             }
-            return ValidationResult::valid()
-                .with_warning("Signal has no value or text");
+            return ValidationResult::valid().with_warning("Signal has no value or text");
         }
     };
 
     // Check for NaN or infinity
     if value.is_nan() {
-        return ValidationResult::valid()
-            .with_error("Signal value is NaN");
+        return ValidationResult::valid().with_error("Signal value is NaN");
     }
     if value.is_infinite() {
-        return ValidationResult::valid()
-            .with_error("Signal value is infinite");
+        return ValidationResult::valid().with_error("Signal value is infinite");
     }
 
     // Get range for this biomarker
@@ -519,11 +508,10 @@ pub fn validate_signal(signal: &Signal) -> ValidationResult {
         Some(range) => range.validate(value, &signal.biomarker_slug),
         None => {
             // Unknown biomarker - pass through with warning
-            ValidationResult::valid()
-                .with_warning(format!(
-                    "No validation rules for biomarker '{}'",
-                    signal.biomarker_slug
-                ))
+            ValidationResult::valid().with_warning(format!(
+                "No validation rules for biomarker '{}'",
+                signal.biomarker_slug
+            ))
         }
     }
 }

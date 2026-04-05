@@ -366,23 +366,17 @@ pub fn normalize_value(biomarker_slug: &str, value: f64, source_slug: &str) -> N
         // ─────────────────────────────────────────────────────────────────
         // Circadian computed metrics: no conversion
         // ─────────────────────────────────────────────────────────────────
-        "sleep_regularity_index" | "social_jetlag" => {
-            NormalizationResult::unchanged(value)
-        }
+        "sleep_regularity_index" | "social_jetlag" => NormalizationResult::unchanged(value),
 
         // ─────────────────────────────────────────────────────────────────
         // Respiratory metrics: no conversion (events/hour is standard)
         // ─────────────────────────────────────────────────────────────────
-        "ahi" | "oxygen_desat_index" => {
-            NormalizationResult::unchanged(value)
-        }
+        "ahi" | "oxygen_desat_index" => NormalizationResult::unchanged(value),
 
         // ─────────────────────────────────────────────────────────────────
         // Menstrual metrics: no conversion
         // ─────────────────────────────────────────────────────────────────
-        "menstrual_cycle_day" | "menstrual_flow" => {
-            NormalizationResult::unchanged(value)
-        }
+        "menstrual_cycle_day" | "menstrual_flow" => NormalizationResult::unchanged(value),
 
         // ─────────────────────────────────────────────────────────────────
         // Default: no conversion needed

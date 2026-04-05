@@ -41,23 +41,31 @@ impl ColumnMapping {
 
         for (i, header) in headers.iter().enumerate() {
             let normalized = header.to_lowercase().trim().to_string();
-            col_map.insert(match normalized.as_str() {
-                "time" | "timestamp" | "datetime" | "date" | "recorded_at" => "time",
-                "biomarker" | "biomarker_slug" | "metric" | "type" | "signal_type" => "biomarker_slug",
-                "value" | "measurement" | "reading" | "amount" => "value",
-                "source" | "source_slug" | "data_source" | "provider" => "source_slug",
-                "quality" | "quality_score" | "confidence" => "quality",
-                "window" | "window_seconds" | "duration" | "period" => "window_seconds",
-                "text" | "value_text" | "note" | "notes" => "value_text",
-                _ => continue,
-            }, i);
+            col_map.insert(
+                match normalized.as_str() {
+                    "time" | "timestamp" | "datetime" | "date" | "recorded_at" => "time",
+                    "biomarker" | "biomarker_slug" | "metric" | "type" | "signal_type" => {
+                        "biomarker_slug"
+                    }
+                    "value" | "measurement" | "reading" | "amount" => "value",
+                    "source" | "source_slug" | "data_source" | "provider" => "source_slug",
+                    "quality" | "quality_score" | "confidence" => "quality",
+                    "window" | "window_seconds" | "duration" | "period" => "window_seconds",
+                    "text" | "value_text" | "note" | "notes" => "value_text",
+                    _ => continue,
+                },
+                i,
+            );
         }
 
-        let time = *col_map.get("time")
+        let time = *col_map
+            .get("time")
             .context("CSV must have a 'time' or 'timestamp' column")?;
-        let biomarker_slug = *col_map.get("biomarker_slug")
+        let biomarker_slug = *col_map
+            .get("biomarker_slug")
             .context("CSV must have a 'biomarker_slug' or 'metric' column")?;
-        let value = *col_map.get("value")
+        let value = *col_map
+            .get("value")
             .context("CSV must have a 'value' column")?;
 
         Ok(Self {
@@ -92,7 +100,9 @@ fn parse_datetime(s: &str) -> Option<DateTime<Utc>> {
     }
 
     // Try date only (midnight UTC)
-    if let Ok(dt) = NaiveDateTime::parse_from_str(&format!("{} 00:00:00", trimmed), "%Y-%m-%d %H:%M:%S") {
+    if let Ok(dt) =
+        NaiveDateTime::parse_from_str(&format!("{} 00:00:00", trimmed), "%Y-%m-%d %H:%M:%S")
+    {
         return Some(Utc.from_utc_datetime(&dt));
     }
 
@@ -165,12 +175,10 @@ impl CsvIngester {
             .context("Failed to open CSV file")?;
 
         // Get headers and detect column mapping
-        let headers = reader.headers()
-            .context("CSV must have headers")?
-            .clone();
+        let headers = reader.headers().context("CSV must have headers")?.clone();
 
-        let mapping = ColumnMapping::from_headers(&headers)
-            .context("Failed to detect column mapping")?;
+        let mapping =
+            ColumnMapping::from_headers(&headers).context("Failed to detect column mapping")?;
 
         debug!("Detected column mapping: {:?}", mapping);
 
@@ -234,12 +242,12 @@ impl CsvIngester {
         line_num: usize,
     ) -> Result<Option<Signal>> {
         // Parse required fields
-        let time_str = record.get(mapping.time)
-            .context("Missing time column")?;
+        let time_str = record.get(mapping.time).context("Missing time column")?;
         let time = parse_datetime(time_str)
             .with_context(|| format!("Invalid datetime at line {}: '{}'", line_num, time_str))?;
 
-        let biomarker_slug = record.get(mapping.biomarker_slug)
+        let biomarker_slug = record
+            .get(mapping.biomarker_slug)
             .context("Missing biomarker_slug column")?
             .trim()
             .to_string();
@@ -248,7 +256,8 @@ impl CsvIngester {
             return Ok(None); // Skip empty biomarker
         }
 
-        let value_str = record.get(mapping.value)
+        let value_str = record
+            .get(mapping.value)
             .context("Missing value column")?
             .trim();
 
@@ -259,7 +268,8 @@ impl CsvIngester {
                 if let Some(text) = record.get(text_col) {
                     let text = text.trim();
                     if !text.is_empty() {
-                        let source = mapping.source_slug
+                        let source = mapping
+                            .source_slug
                             .and_then(|c| record.get(c))
                             .map(|s| s.trim().to_string())
                             .filter(|s| !s.is_empty())
@@ -273,11 +283,13 @@ impl CsvIngester {
         }
 
         // Parse numeric value
-        let value: f64 = value_str.parse()
+        let value: f64 = value_str
+            .parse()
             .with_context(|| format!("Invalid value at line {}: '{}'", line_num, value_str))?;
 
         // Get optional fields
-        let source = mapping.source_slug
+        let source = mapping
+            .source_slug
             .and_then(|c| record.get(c))
             .map(|s| s.trim().to_string())
             .filter(|s| !s.is_empty())
